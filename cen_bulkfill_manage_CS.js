@@ -59,7 +59,7 @@ function(runtime, record, search) {
         
         itemList.addButton({
             id:'custpage_add_bulkfill_lines',
-            label:'Add Bulk Fulfillment Lines',
+            label:'Bulk Fulfill',
             functionName:'addLines()'
         });
     }

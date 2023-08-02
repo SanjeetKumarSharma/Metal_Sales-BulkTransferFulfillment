@@ -6,12 +6,13 @@
  * Created by Centric Consulting
  * Authors: Angela Brazil
  * 
- * Description: 
+ * Description: Manages client side functions related to bulk fulfillment in the Transfer Order form
+ * Adds button to open the Suitelet and controls functionality of lines that have been cross-linked
  * 
 */
 
-define(['N/runtime', 'N/record', 'N/search'],
-function(runtime, record, search) {
+define(['N/runtime'],
+function(runtime) {
     
     function pageInit(context){
         try{
@@ -33,52 +34,45 @@ function(runtime, record, search) {
         }        
     }
 
+    /**
+     * Add a button with the label "Bulk Fulfill" to the Item sublist. Clicking calls the bulkFulfillClick
+     * function defined below
+     * @param {*} context 
+     */
     function addBulkFillButton(context){
-        try {
-            if ((_current_record.type != TRANS_UTILS.TRANSACTION_TYPES.SALES_ORDER) && (_current_record.type != TRANS_UTILS.TRANSACTION_TYPES.QUOTE)) {
-                console.log(title + ' Un-Applicable Transction Type, EXIT');
-                return;
-            }
-
-            var $ = jQuery,
-            tr = $('#item_buttons > table > tbody > tr'),
-            td = $('<td>').appendTo(tr),
-            btnConf = $('<button type="button" class="btn-edit-config">').text('*NEW EDIT*').appendTo(td);
-
-            btnConf.click(function () {
-                bulkFulfillClick();
-            });
-        } catch (ex) {
-            console.log(title + 'Exception: ' + ex.toString());
-            log.error(title + 'Exception', ex);
-        } finally {
-            
-        }
-        
-        var itemList = context.form.getSublist('item');
-        
-        itemList.addButton({
-            id:'custpage_add_bulkfill_lines',
-            label:'Bulk Fulfill',
-            functionName:'addLines()'
-        });
+        //STUB****************
     }
 
-    function bulkFulfillClick(item_id, item_name){
+    /**
+     * Opens the Bulk Fulfillment line selection suitelet. Called when the "Bulk Fulfill" button is selected
+     * @param {*} fromLocation 
+     * @param {*} toLocation 
+     */
+    function bulkFulfillClick(fromLocation, toLocation){
         var bulkfill_url = url.resolveScript({
             scriptId: 'customscript_bulkfill_manage_sl',
             deploymentId: 'customdeploy_cen_bulkfill_manage_sl',
             returnExternalUrl: false,
             params: {
-                'item_id': item_id,
-                'location_id': item_name
+                'from_location': fromLocation,
+                'to_location': toLocation
             }
         });
         window.open(bulkfill_url, "BULK TRANSFER FULFILLMENT", "popup=yes,width=900,height=700");
     }
 
+    /**
+     * Prevents changes to any lines on the current record that have been cross-linked during
+     * the bulk fulfillment process. If a reference is recorded to either a request or fulfillment
+     * transfer order, the line is locked
+     * @param {*} currRec 
+     */
     function lockAllLinkedLines(currRec){
-        //STUB**********//
+        //Iterate through the item sublist on the current record
+        for(var i = 0; i<currRec.getLineCount({sublistId: 'item'}); i++){
+            //If the Request TO, Fulfillment TO, or Line Unique Key fields are populated, lock the line
+            //STUB************
+        }            
     }
 
     return {

@@ -11,8 +11,8 @@
  * 
 */
 
-define(['N/runtime'],
-function(runtime) {
+define(['N/runtime', 'N/record'],
+function(runtime, record) {
     
     function pageInit(context){
         try{
@@ -32,6 +32,36 @@ function(runtime) {
         }catch(e){
             log.error('ERROR', e);
         }        
+    }
+
+    function validateDelete(context){
+        var currRec = context.currentRecord;
+
+        if(context.sublistId == 'item'){
+            var fulfillmentTOid = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_fulfillto'});
+            var requestTOid = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_requestto'});
+
+            if(fulfillmentTOid){
+                //This line is linked to a fulfillment transfer order line
+                //Warn the user tha this line has already been fulfilled
+                //*STUB********
+
+                //Do not allow the delete action to proceed
+                return false
+            } else if(requestTOid){
+                try{
+                    //Reopen the closed line on the request TO
+                    var linkedLineKey = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey'});
+                    reopenClosedLine(requestTOid, linkedLineKey);
+
+                    //Allow the deletion action to complete
+                    return true
+                } catch(e){
+                    log.error('Unable to reopen closed request line', e);
+                    return false
+                }
+            }
+        }
     }
 
     /**
@@ -75,7 +105,26 @@ function(runtime) {
         }            
     }
 
+    /**
+     * When a fulfillment line is deleted, use the line unique key value to identify the original request
+     * line and reopen that line on the requesting TO
+     * @param {*} requestTOid 
+     * @param {*} linkedLineKey 
+     */
+    function reopenClosedLine(requestTOid, linkedLineKey){
+        var requestTOrec = record.load({
+            type: 'transferorder',
+            id: requestTOid,
+            isDynamic: true
+        });
+
+        //Loop through the item sublist until the lineuniquekey value matches the target linkedLineKey
+        //Once the line is found, mark it as open (closed = false)
+        //STUB*************
+    }
+
     return {
-        pageInit: pageInit
+        pageInit: pageInit,
+        validateDelete: validateDelete
     }
 });

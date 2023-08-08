@@ -11,11 +11,11 @@
  * 
 */
 
-define(['N/runtime', 'N/record'],
-function(runtime, record) {
+define(['N/runtime', 'N/record','N/url'],
+function(runtime, record,url) {
     
     function pageInit(context){
-        try{
+       /* try{
             var params = {
                 bulkFillRoles: runtime.getCurrentScript().getParameter({name: 'custscript_bulkfill_roles'}),
                 userRole: runtime.getCurrentUser().role
@@ -31,7 +31,7 @@ function(runtime, record) {
         
         }catch(e){
             log.error('ERROR', e);
-        }        
+        }    */    
     }
 
     function validateDelete(context){
@@ -123,8 +123,21 @@ function(runtime, record) {
         //STUB*************
     }
 
+    function bulkFulfill()
+    {
+        alert('inside bulk fulfillment')
+        var script_url = url.resolveScript({
+            scriptId: 'customscript_cen_blk_fulfill',
+                deploymentId: 'customdeploy1'
+                    });
+        alert(script_url)
+        window.open(script_url);
+       
+        }
+
     return {
         pageInit: pageInit,
-        validateDelete: validateDelete
+        validateDelete: validateDelete,
+        bulkFulfill:bulkFulfill
     }
 });

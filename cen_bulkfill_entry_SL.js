@@ -48,32 +48,71 @@
             //Add header fields. Option to select item is unlocked for entry, other fields are for reference only
             form.addFieldGroup({ id: 'custpage_header_group', label: ' ' });
             var item_id_field = form.addField({ id: 'custpage_item_id', label: "Item",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
+            item_id_field.defaultValue = params.item_id;
+            
             var from_loc_field = form.addField({ id: 'custpage_location_id', label: "Location",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
             from_loc_field.updateDisplayType({ displayType: serverWidget.FieldDisplayType.INLINE });
+            from_loc_field.defaultValue = params.from_location;
+            
             var to_loc_field = form.addField({ id: 'custpage_location_id', label: "Location",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
             to_loc_field.updateDisplayType({ displayType: serverWidget.FieldDisplayType.INLINE });
+            to_loc_field.defaultValue = params.to_location;
+            
             var total_qty_field = form.addField({id: 'custpage_total_qty', label: "Total Quantity Selected", type: serverWidget.FieldTYpe.FLOAT, container: 'custpage_header_group'});
             total_qty_field.updateDisplayType({ displayType: serverWidget.FieldDisplayType.INLINE });
+            total_qty_field.defaultValue = 0;
 
-            form.addSubmitButton({label: 'Save Lines'});
             form.addButton({id: 'btn_cancel', label: 'Cancel', functionName: 'onCancelClick'});
 
-            //Add sublist to show transfer order lines available for selection
-            var sublist = form.addSublist({
-                id: 'custpage_to_request_lines',
-                type: serverWidget.SublistType.LIST,
-                label: 'Requested Material Lines',
-                tab: 'custpage_to_request_lines'
-            });
+            if(params.from_location && params.to_location){
+                if(params.item_id){
+                    //Do not add the submit button unless all parameters to populate the sublist are provided
+                    form.addSubmitButton({label: 'Save Lines'});
+                    
+                    //Add sublist to show transfer order lines available for selection
+                    var sublist = form.addSublist({
+                        id: 'custpage_to_request_lines',
+                        type: serverWidget.SublistType.LIST,
+                        label: 'Requested Material Lines',
+                        tab: 'custpage_to_request_lines'
+                    });
+                    
+                    sublist = populateLineItems(sublist, params.item_id, params.from_location, params.to_location);
+                } else {
+                    var sublistMessage = form.addField({id: 'custpage_sublistmessage', type: serverWidget.FieldType.INLINEHTML, label: ''});
+                    sublistMessage.defaultValue = 'Please select an Item from the dropdown.'
+                }
+            } else {
+                var sublistMessage = form.addField({id: 'custpage_sublistmessage', type: serverWidget.FieldType.INLINEHTML, label: ''});
+                sublistMessage.defaultValue = 'Missing location selection(s). Please close this window and return to the Transfer Order page. '
+                + 'On the Transfer Order, select both the origin and destination locations for the material you wish to transfer. '
+                + 'Then select the Bulk Fulfill button to return to this page.';                
+            }
 
-            //Note: Sublist will have no lines on initial load. Sublist lines will be populated after
-            //the user selects an item in the item_id_field (see Client script)
-            
         } catch (ex) {
             log.error(title + 'Exception', ex);
         } finally {
             return form;
         }
+    }
+
+    /**
+     * Search all transfer order lines that match the item, from location and to location
+     * Sort by transfer order date, with the oldest results first. Return up to 50 results
+     * Populate each result into the sublist, with a checkbox field added so the user can select
+     * the lines they wish to copy, and Quantity to Fulfill input field added so the user can
+     * override the original quantity. Quantity to Fulfill should default to the original line quantity.
+     * @param {object} sublist 
+     * @param {internalid} itemId 
+     * @param {internalid} fromLoc 
+     * @param {internalid} toLoc 
+     * @returns modified sublist object
+     */
+    function populateLineItems(sublist, itemId, fromLoc, toLoc){
+
+        //STUB
+
+        return sublist
     }
 
     return {

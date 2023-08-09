@@ -60,11 +60,14 @@
 
             //Add sublist to show transfer order lines available for selection
             var sublist = form.addSublist({
-                id: 'custpage_subi_table',
+                id: 'custpage_to_request_lines',
                 type: serverWidget.SublistType.LIST,
-                label: 'SUBI',
-                tab: 'custpage_subi_filter'
+                label: 'Requested Material Lines',
+                tab: 'custpage_to_request_lines'
             });
+
+            //Note: Sublist will have no lines on initial load. Sublist lines will be populated after
+            //the user selects an item in the item_id_field (see Client script)
             
         } catch (ex) {
             log.error(title + 'Exception', ex);

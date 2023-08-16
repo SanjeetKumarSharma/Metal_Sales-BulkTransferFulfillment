@@ -6,31 +6,8 @@
 * Authors: Angela Brazil
 * 
 * Description: Performs cross-linkage of bulk fulfillment lines upon record save
- test comment 7th august
 */
-define(['N/record','N/runtime','N/url'], function(record,runtime,url) {
-    function beforeLoad(context)
-    {
-        try{
-            
-               var  bulkFillRoles =runtime.getCurrentScript().getParameter({name: 'custscript_bulkfill_roles'});
-               if(isEmpty(bulkFillRoles)){return;}
-               var  userRole = runtime.getCurrentUser().role;
-            
-            log.debug('bulkFillRoles', bulkFillRoles);
-            log.debug('userRole', userRole);
-
-            if(bulkFillRoles.indexOf(userRole) >= 0 ){
-                addBulkFillButton(context);                
-            }
-
-           // var currRec = context.currentRecord;
-           // lockAllLinkedLines(currRec);
-        
-        }catch(e){
-            log.error('ERROR', e);
-        }        
-    }
+define(['N/record'], function(record) {
     
     function afterSubmit(context) {
         try{
@@ -169,28 +146,7 @@ define(['N/record','N/runtime','N/url'], function(record,runtime,url) {
         fulfillmentRec.save();
     }
 
-    function isEmpty(param) {
-        if (param === '' || param === null || param === undefined || param.length <= 0 || param === 'null') {
-            return true;
-        }
-        return false;
-    }
-
-    function addBulkFillButton(context)
-    {
-        context.form.clientScriptModulePath = "SuiteScripts/cen_bulkfill_manage_CS.js" ;        
-        context.form.addButton({
-                    id: "custpage_bulkfulfill",
-                    label: "Bulk Fulfill",
-                    functionName: 'bulkFulfill()'
-                  // functionName:'window.open('+script_url+');'
-                });
-           
-    }
-
     return {
-
-        beforeLoad: beforeLoad,
         afterSubmit: afterSubmit
     };
 });

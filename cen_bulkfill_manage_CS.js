@@ -8,14 +8,13 @@
  * 
  * Description: Manages client side functions related to bulk fulfillment in the Transfer Order form
  * Adds button to open the Suitelet and controls functionality of lines that have been cross-linked
- * 
 */
 
-define(['N/runtime', 'N/record','N/url'],
-function(runtime, record,url) {
+define(['N/runtime','N/record','N/url'],
+function(runtime,record,url) {
     
     function pageInit(context){
-       /* try{
+       try{
             var params = {
                 bulkFillRoles: runtime.getCurrentScript().getParameter({name: 'custscript_bulkfill_roles'}),
                 userRole: runtime.getCurrentUser().role
@@ -31,7 +30,7 @@ function(runtime, record,url) {
         
         }catch(e){
             log.error('ERROR', e);
-        }    */    
+        }    
     }
 
     function validateDelete(context){
@@ -123,21 +122,8 @@ function(runtime, record,url) {
         //STUB*************
     }
 
-    function bulkFulfill()
-    {
-        alert('inside bulk fulfillment')
-        var script_url = url.resolveScript({
-            scriptId: 'customscript_cen_blk_fulfill',
-                deploymentId: 'customdeploy1'
-                    });
-        alert(script_url)
-        window.open(script_url);
-       
-        }
-
     return {
         pageInit: pageInit,
-        validateDelete: validateDelete,
-        bulkFulfill:bulkFulfill
+        validateDelete: validateDelete
     }
 });

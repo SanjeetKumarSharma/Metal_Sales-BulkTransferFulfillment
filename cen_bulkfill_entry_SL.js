@@ -7,7 +7,8 @@
  * Authors: Angela Brazil
  * 
  * Description: 
- * When the "Bulk Fulfill" button is selected in the Transfer Order form, load the line selection form
+ * When the "Bulk Fulfill" button is selected in the Transfer Order form, load the line selection form.
+ * Page also reloads whenever a new Item is selected.
  */
 
  CONST_CLIENT_SCRIPT_PATH = './cen_bulkfill_entry_CS.js';
@@ -20,7 +21,8 @@
     
         var params = {
             item_id : request.parameters.item_id,
-            location_id : request.parameters.item_name
+            from_location_id : request.parameters.from_location_id,
+            to_location_id: request.parameters.to_location_id
         };
 
         if (request.method === 'GET') {
@@ -48,7 +50,7 @@
             //Add header fields. Option to select item is unlocked for entry, other fields are for reference only
             form.addFieldGroup({ id: 'custpage_header_group', label: ' ' });
             var item_id_field = form.addField({ id: 'custpage_item_id', label: "Item",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
-            item_id_field.defaultValue = params.item_id;
+            item_id_field.defaultValue = params.item;
             
             var from_loc_field = form.addField({ id: 'custpage_location_id', label: "Location",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
             from_loc_field.updateDisplayType({ displayType: serverWidget.FieldDisplayType.INLINE });
@@ -65,7 +67,7 @@
             form.addButton({id: 'btn_cancel', label: 'Cancel', functionName: 'onCancelClick'});
 
             if(params.from_location && params.to_location){
-                if(params.item_id){
+                if(params.item){
                     //Do not add the submit button unless all parameters to populate the sublist are provided
                     form.addSubmitButton({label: 'Save Lines'});
                     
@@ -77,7 +79,7 @@
                         tab: 'custpage_to_request_lines'
                     });
                     
-                    sublist = populateLineItems(sublist, params.item_id, params.from_location, params.to_location);
+                    sublist = populateLineItems(sublist, params.item, params.from_location, params.to_location);
                 } else {
                     var sublistMessage = form.addField({id: 'custpage_sublistmessage', type: serverWidget.FieldType.INLINEHTML, label: ''});
                     sublistMessage.defaultValue = 'Please select an Item from the dropdown.'

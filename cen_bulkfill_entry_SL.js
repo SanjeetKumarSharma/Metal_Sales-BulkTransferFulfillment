@@ -20,9 +20,9 @@
         var response  = context.response;
     
         var params = {
-            item_id : request.parameters.item_id,
-            from_location_id : request.parameters.from_location_id,
-            to_location_id: request.parameters.to_location_id
+            item : request.parameters.item,
+            from_location : request.parameters.from_location,
+            to_location: request.parameters.to_location
         };
 
         if (request.method === 'GET') {
@@ -49,8 +49,8 @@
 
             //Add header fields. Option to select item is unlocked for entry, other fields are for reference only
             form.addFieldGroup({ id: 'custpage_header_group', label: ' ' });
-            var item_id_field = form.addField({ id: 'custpage_item_id', label: "Item",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
-            item_id_field.defaultValue = params.item;
+            var item_field = form.addField({ id: 'custpage_item', label: "Item",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
+            item_field.defaultValue = params.item;
             
             var from_loc_field = form.addField({ id: 'custpage_location_id', label: "Location",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
             from_loc_field.updateDisplayType({ displayType: serverWidget.FieldDisplayType.INLINE });

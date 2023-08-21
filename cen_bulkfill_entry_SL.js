@@ -52,11 +52,11 @@
             var item_field = form.addField({ id: 'custpage_item', label: "Item",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
             item_field.defaultValue = params.item;
             
-            var from_loc_field = form.addField({ id: 'custpage_location_id', label: "Location",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
+            var from_loc_field = form.addField({ id: 'custpage_from_location_id', label: "From Location",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
             from_loc_field.updateDisplayType({ displayType: serverWidget.FieldDisplayType.INLINE });
             from_loc_field.defaultValue = params.from_location;
             
-            var to_loc_field = form.addField({ id: 'custpage_location_id', label: "Location",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
+            var to_loc_field = form.addField({ id: 'custpage_to_location_id', label: "To Location",  type: serverWidget.FieldType.SELECT, container: 'custpage_header_group' });
             to_loc_field.updateDisplayType({ displayType: serverWidget.FieldDisplayType.INLINE });
             to_loc_field.defaultValue = params.to_location;
             
@@ -74,12 +74,13 @@
                     //Add sublist to show transfer order lines available for selection
                     var sublist = form.addSublist({
                         id: 'custpage_to_request_lines',
-                        type: serverWidget.SublistType.LIST,
+                        type: serverWidget.SublistType.INLINE_EDITOR,
                         label: 'Requested Material Lines',
                         tab: 'custpage_to_request_lines'
                     });
                     
                     sublist = populateLineItems(sublist, params.item, params.from_location, params.to_location);
+                    
                 } else {
                     var sublistMessage = form.addField({id: 'custpage_sublistmessage', type: serverWidget.FieldType.INLINEHTML, label: ''});
                     sublistMessage.defaultValue = 'Please select an Item from the dropdown.'
@@ -111,10 +112,91 @@
      * @returns modified sublist object
      */
     function populateLineItems(sublist, itemId, fromLoc, toLoc){
-
+        var arrObj= new Array();
         //STUB
-        //I will start from today onwards.
+        sublist.addField({
+            id: 'custpage_checkbox',
+            type: ui.FieldType.CHECKBOX,
+            label: 'Checkbox'
+        });
+        sublist.addField({
+            id: 'custpage_to_number',
+            type: ui.FieldType.TEXT,
+            label: 'To#'
+        });
+        sublist.addField({
+            id: 'custpage_date',
+            type: ui.FieldType.DATE,
+            label: 'Date'
+        });
+        sublist.addField({
+            id: 'custpage_quantity',
+            type: ui.FieldType.TEXT,
+            label: 'Quantity'
+        });
+        sublist.addField({
+            id: 'custpage_converted_quantity',
+            type: ui.FieldType.TEXT,
+            label: 'Converted Quantity'
+        });
+        sublist.addField({
+            id: 'custpage_expected_receipt_date',
+            type: ui.FieldType.DATE,
+            label: 'Date'
+        });
+        sublist.addField({
+            id: 'custpage_quantity_to_fullfill',
+            type: ui.FieldType.TEXT,
+            label: 'Quantity to fullfill'
+        });
+        //Search item on the basis of from location,to location and item
 
+        var transerOrdLineItem = search.create({
+            type: "transferorder",
+            filters:
+            [
+               ["type","anyof","TrnfrOrd"], 
+               "AND", 
+               ["location","anyof",fromLoc], 
+               "AND", 
+               ["transferlocation","anyof",toLoc], 
+               "AND", 
+               ["item","anyof",itemId],
+               "AND",
+               ["mainline","is",false]
+            ],
+            columns:
+            [
+                search.createColumn({
+                    name: "trandate",
+                    sort: search.Sort.ASC,
+                    label: "Date"
+                }),
+               search.createColumn({name: "tranid",label: "To #"}),
+               search.createColumn({name: "expectedreceiptdate", label: "Expected Receipt Date"}),
+               search.createColumn({name: "quantity", label: "Quantity"})
+            ]
+         });
+         var transerOrdLineItemCount = transerOrdLineItem.runPaged().count;
+                    if (transerOrdLineItemCount > 0) {
+                        var resultRange = transerOrdLineItem.run().getRange({
+                            start: 0,
+                            end: 49
+                        });
+                        for(var k=0; k<50; k++){
+                        
+                        arrObj.push({
+                            'custpage_to_number':resultRange[k].getValue({ name: 'tranid'}),
+                            'custpage_date':resultRange[k].getValue({ name: 'trandate'}),
+                            'custpage_expected_receipt_date':resultRange[k].getValue({ name: 'expectedreceiptdate'}),
+                            'custpage_quantity':resultRange[k].getValue({ name: 'quantity'})
+
+                        });
+                    }
+                        log.debug("GET", "Client Script File ID:" + clientScriptFileID);
+                    };
+                    sublist.setSublistValue(arrObj);
+        
         return sublist
     }
 

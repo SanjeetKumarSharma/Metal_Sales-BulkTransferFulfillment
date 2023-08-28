@@ -58,6 +58,7 @@
                  id: 'custpage_item',
                  label: "Item",
                  type: serverWidget.FieldType.SELECT,
+                 source : 'item',
                  container: 'custpage_header_group'
              });
              item_field.defaultValue = params.item;
@@ -66,6 +67,7 @@
                  id: 'custpage_from_location_id',
                  label: "From Location",
                  type: serverWidget.FieldType.SELECT,
+                 source : 'location',
                  container: 'custpage_header_group'
              });
              from_loc_field.updateDisplayType({
@@ -77,6 +79,7 @@
                  id: 'custpage_to_location_id',
                  label: "To Location",
                  type: serverWidget.FieldType.SELECT,
+                 source : 'location',
                  container: 'custpage_header_group'
              });
              to_loc_field.updateDisplayType({
@@ -175,12 +178,12 @@
          });
          sublist.addField({
              id: 'custpage_quantity',
-             type: serverWidget.FieldType.TEXT,
+             type: serverWidget.FieldType.FLOAT,
              label: 'Quantity'
          });
          sublist.addField({
              id: 'custpage_converted_quantity',
-             type: serverWidget.FieldType.TEXT,
+             type: serverWidget.FieldType.FLOAT,
              label: 'Converted Quantity'
          });
          sublist.addField({
@@ -190,7 +193,7 @@
          });
          sublist.addField({
              id: 'custpage_quantity_to_fullfill',
-             type: serverWidget.FieldType.TEXT,
+             type: serverWidget.FieldType.FLOAT,
              label: 'Quantity to fullfill'
          });
          //Search item on the basis of from location,to location and item
@@ -238,7 +241,7 @@
          if (transerOrdLineItemCount > 0) {
              var resultRange = transerOrdLineItem.run().getRange({
                  start: 0,
-                 end: 50
+                 end: 5
              });
              for (var k = 0; k < resultRange.length; k++) {
                  sublist.setSublistValue({

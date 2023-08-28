@@ -23,10 +23,10 @@ function(currentRecord, url) {
         if(context.fieldId == 'custpage_item'){
             try{
                 console.log(title + ' | custpage_item');
-
                 //Get the parameter values from the current selections on the page
                 //** STUB ********** */
-
+                 var ItemId= currRec.getValue('custpage_item');
+                 alert(ItemId);
                 //Reload the Suitelet
                 //** STUB ********** */
             }catch(e){

@@ -55,12 +55,13 @@ define(['N/currentRecord', 'N/url'],
               var linecount=currRec.getLineCount({sublistId: "custpage_to_request_lines"});
               alert(linecount);
                  for(var i=0; i<linecount; i++){
+                   
 					 var isSelected = currRec.getSublistValue({
                          sublistId: 'custpage_to_request_lines',
                          fieldId: 'custpage_checkbox',
                          line:i
                         });
-                    if(isSelected==true){
+                    if(isSelected=='true'){
 						var lineQuantityToFulfill = currRec.getSublistValue({
                                sublistId: 'custpage_to_request_lines',
                                fieldId: 'custpage_quantity_to_fullfill',
@@ -85,10 +86,12 @@ define(['N/currentRecord', 'N/url'],
          * @param {*} context 
          */
         function onSubmitClick() {
-            var title = "onCancelClick";
+          debugger;
+            var title = "onSubmitClick";
+            alert(title);
             try {
                 var currRec = currentRecord.get();
-
+                 alert(currRec);
                 //Iterate over the lines in the Suitelet
                 for (var i = 0; i < currRec.getLineCount({
                         sublistId: "custpage_to_request_lines"
@@ -96,28 +99,48 @@ define(['N/currentRecord', 'N/url'],
                     //Get the request line data
                     var linesToAdd = [];
                     //** STUB ********** */
-
+                  var isSelected = currRec.getSublistValue({
+                         sublistId: 'custpage_to_request_lines',
+                         fieldId: 'custpage_checkbox',
+                         line:i
+                        });
+                  var lineQuantityToFulfill = currRec.getSublistValue({
+                               sublistId: 'custpage_to_request_lines',
+                               fieldId: 'custpage_quantity_to_fullfill',
+                              line: i
+                             });
+                  var originalOpenQuantity=currRec.getSublistValue({
+                               sublistId: 'custpage_to_request_lines',
+                               fieldId: 'custpage_quantity',
+                              line: i
+                             });
+                  var transferOrderId=currRec.getSublistValue({
+                               sublistId: 'custpage_to_request_lines',
+                               fieldId: 'custpage_to_number',
+                              line: i
+                             });
+                    if(isSelected==true){
                     //If the "Quantity to Fulfill" value is greater than the original open quantity on the line
                     //populate the original open quantity into the Quantity field when creating the line copy.
-                    var quantityDelta = ''; //*STUB*********/
-                    if (quantityDelta > 0) {
+                    if (lineQuantityToFulfill > originalOpenQuantity) {
                         //Populate the original open quantity into the first line
                         linesToAdd.push({
                             //*STUB ******************//
+                          'tranid':transferOrderId,
+                          'quantity':originalOpenQuantity
                         });
 
-                        //Populate the quantity overage into an additional line. 
-                        //Do not populate the transfer order id or line unique key on the additional line.
-                        linesToAdd.push({
-                            //*STUB ******************//
-                        });
+                       
                     } else {
                         //Only populate one line, with Quantity to Fulfill in the Quantity field
                         //Note: UE script will handle any negative quantity deltas
                         linesToAdd.push({
                             //*STUB ******************//
+                          'tranid':transferOrderId,
+                          'quantity':lineQuantityToFulfill
                         });
                     }
+                }
                 }
 
                 //Write the request line data back to the triggering Transfer Order
@@ -143,9 +166,12 @@ define(['N/currentRecord', 'N/url'],
          */
         function onCancelClick() {
             var title = "onCancelClick";
+            alert(title);
             try {
                 console.log(title);
-                window.close();
+              window.location.href = '/app/center/card.nl?sc=-29&whence=';
+             // window.close();
+             // window.top.close();
             } catch (e) {
                 console.error(title + ' | Exception: ' + e.toString());
                 log.error(title + ' | Exception', e);

@@ -116,7 +116,6 @@
                          id: 'custpage_to_request_lines',
                          type: serverWidget.SublistType.INLINEEDITOR,
                          label: 'Requested Material Lines'
-                         // tab: 'custpage_to_request_lines'
                      });
  
                      sublist = populateLineItems(sublist, params.item, params.from_location, params.to_location);
@@ -160,115 +159,139 @@
       * @returns modified sublist object
       */
      function populateLineItems(sublist, itemId, fromLoc, toLoc) {
-         //STUB
-         sublist.addField({
-             id: 'custpage_checkbox',
-             type: serverWidget.FieldType.CHECKBOX,
-             label: 'Checkbox'
-         });
-         sublist.addField({
-             id: 'custpage_to_number',
-             type: serverWidget.FieldType.TEXT,
-             label: 'To#'
-         });
-         sublist.addField({
-             id: 'custpage_date',
-             type: serverWidget.FieldType.DATE,
-             label: 'Date'
-         });
-         sublist.addField({
-             id: 'custpage_quantity',
-             type: serverWidget.FieldType.FLOAT,
-             label: 'Quantity'
-         });
-         sublist.addField({
-             id: 'custpage_converted_quantity',
-             type: serverWidget.FieldType.FLOAT,
-             label: 'Converted Quantity'
-         });
-         sublist.addField({
-             id: 'custpage_expected_receipt_date',
-             type: serverWidget.FieldType.DATE,
-             label: 'Expected Receipt Date'
-         });
-         sublist.addField({
-             id: 'custpage_quantity_to_fullfill',
-             type: serverWidget.FieldType.FLOAT,
-             label: 'Quantity to fullfill'
-         });
-         //Search item on the basis of from location,to location and item
- 
-         var transerOrdLineItem = search.create({
-             type: "transferorder",
-             filters: [
-                 ["type", "anyof", "TrnfrOrd"],
-                 "AND",
-                 ["closed", "is", "F"],
-                 "AND",
-                 ["location", "anyof", toLoc, fromLoc],
-                 "AND",
-                 ["item", "anyof", itemId],
-                 "AND",
-                 ["transferlocation", "anyof", toLoc],
-                 "AND",
-                 ["mainline", "is", "F"]
-             ],
-             columns: [
-                 search.createColumn({
-                     name: "tranid",
-                     label: "Document Number"
-                 }),
-                 search.createColumn({
-                     name: "item",
-                     label: "Item"
-                 }),
-                 search.createColumn({
-                     name: "trandate",
-                     sort: search.Sort.ASC,
-                     label: "Date"
-                 }),
-                 search.createColumn({
-                     name: "expectedreceiptdate",
-                     label: "Expected Receipt Date"
-                 }),
-                 search.createColumn({
-                     name: "quantity",
-                     label: "Quantity"
-                 })
-             ]
-         });
-         var transerOrdLineItemCount = transerOrdLineItem.runPaged().count;
-         if (transerOrdLineItemCount > 0) {
-             var resultRange = transerOrdLineItem.run().getRange({
-                 start: 0,
-                 end: 5
-             });
-             for (var k = 0; k < resultRange.length; k++) {
-                 sublist.setSublistValue({
-                     id: 'custpage_to_number',
-                     line: k,
-                     value: resultRange[k].getValue('tranid')
-                 });
-                 sublist.setSublistValue({
-                     id: 'custpage_date',
-                     line: k,
-                     value: resultRange[k].getValue('trandate')
-                 });
-                 sublist.setSublistValue({
-                     id: 'custpage_expected_receipt_date',
-                     line: k,
-                     value: resultRange[k].getValue('expectedreceiptdate')
-                 });
-                 sublist.setSublistValue({
-                     id: 'custpage_quantity',
-                     line: k,
-                     value: resultRange[k].getValue('quantity')
-                 });
-             }
- 
-             log.debug("GET", "Client Script File ID:" + clientScriptFileID);
-         };
-         return sublist
+        sublist.addField({
+            id: 'custpage_checkbox',
+            type: serverWidget.FieldType.CHECKBOX,
+            label: 'Include Line'
+        });
+
+        //Transfer Order data fields should not be editable
+        //Store the creation result so that additional properties can be set
+        var toNumField = sublist.addField({
+            id: 'custpage_to_number',
+            type: serverWidget.FieldType.TEXT,
+            label: 'TO #'
+        });
+        toNumField.updateDisplayType({displayType: serverWidget.FieldDisplayType.DISABLED});
+
+        //Internal id and line unique key fields will be used later to link the request and
+        //fulfillment TOs together
+        var toIdField = sublist.addField({
+            id: 'custpage_to_id',
+            type: serverWidget.FieldType.TEXT,
+            label: 'Transfer Order Id'
+        });
+        toIdField.updateDisplayType({displayType: serverWidget.FieldDisplayType.HIDDEN});
+
+        var lineKeyField = sublist.addField({
+            id: 'custpage_line_key_ref',
+            type: serverWidget.FieldType.TEXT,
+            label: 'TO #'
+        });
+        lineKeyField.updateDisplayType({displayType: serverWidget.FieldDisplayType.HIDDEN});
+
+        var dateCreatedField = sublist.addField({
+            id: 'custpage_date',
+            type: serverWidget.FieldType.DATE,
+            label: 'Date Created'
+        });
+        dateCreatedField.updateDisplayType({displayType: serverWidget.FieldDisplayType.DISABLED});
+
+        var expectedDateField = sublist.addField({
+            id: 'custpage_expected_receipt_date',
+            type: serverWidget.FieldType.DATE,
+            label: 'Expected Receipt Date'
+        });
+        expectedDateField.updateDisplayType({displayType: serverWidget.FieldDisplayType.DISABLED});
+
+        var originalQuantityField = sublist.addField({
+            id: 'custpage_quantity',
+            type: serverWidget.FieldType.FLOAT,
+            label: 'Quantity Requested'
+        });
+        originalQuantityField.updateDisplayType({displayType: serverWidget.FieldDisplayType.HIDDEN});
+        
+        //Quantity to Fulfill is a user entry field. It defaults to the original requested quantity
+        sublist.addField({
+            id: 'custpage_quantity_to_fullfill',
+            type: serverWidget.FieldType.FLOAT,
+            label: 'Quantity to Fullfill'
+        });
+
+        //Search item on the basis of from location,to location and item
+
+        var transerOrdLineItem = search.create({
+            type: "transferorder",
+            filters: [
+                ["type", "anyof", "TrnfrOrd"], "AND",
+                ["status","anyof","TrnfrOrd:B"], "AND", //Pending Fulfillment
+                ["mainline", "is", "F"], "AND",
+                ["closed", "is", "F"], "AND",
+                ["location", "anyof", fromLoc],"AND",
+                ["transferlocation", "anyof", toLoc],"AND",                
+                ["item", "anyof", itemId]
+            ],
+            columns: [
+                "tranid",
+                "internalid",
+                "lineuniquekey",
+                "trandate",
+                search.createColumn({name: "expectedreceiptdate",sort: search.Sort.ASC}),
+                "quantity"                
+            ]
+        });
+
+        var resultRange = transerOrdLineItem.run().getRange({start: 0,end: 50});
+        log.debug('result count', resultRange.length);
+
+        for (var k = 0; k < resultRange.length; k++) {
+
+            sublist.setSublistValue({
+                id: 'custpage_to_number',
+                line: k,
+                value: resultRange[k].getValue('tranid')
+            });
+            sublist.setSublistValue({
+                id: 'custpage_to_id',
+                line: k,
+                value: resultRange[k].getValue('internalid')
+            });
+            sublist.setSublistValue({
+                id: 'custpage_line_key_ref',
+                line: k,
+                value: resultRange[k].getValue('lineuniquekey')
+            });
+            sublist.setSublistValue({
+                id: 'custpage_date',
+                line: k,
+                value: resultRange[k].getValue('trandate')
+            });
+            //Note: expected receipt date can be blank. If script tries to set a blank value
+            //it stops further execution. Only set the value after validating that it exists.
+            var expectedDate = resultRange[k].getValue('expectedreceiptdate');
+            if(expectedDate){
+                sublist.setSublistValue({
+                    id: 'custpage_expected_receipt_date',
+                    line: k,
+                    value: resultRange[k].getValue('expectedreceiptdate')
+                });
+            }
+
+            var requestedQuantity = resultRange[k].getValue('quantity');
+            log.debug('requestedQuantity', requestedQuantity);
+            sublist.setSublistValue({
+                id: 'custpage_quantity',
+                line: k,
+                value: requestedQuantity
+            });
+            sublist.setSublistValue({
+                id: 'custpage_quantity_to_fullfill',
+                line: k,
+                value: requestedQuantity
+            });
+        }
+
+        return sublist
      }
  
      return {

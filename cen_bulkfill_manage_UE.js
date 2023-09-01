@@ -47,16 +47,16 @@ define(['N/record'], function(record) {
                             newLineQty = requestQty - fulfillmentLineData.quantity;
                         }
     
-                        requestTOrec.setCurrentSublistValue({}); //STUB***************Fulfillment TO
-                        requestTOrec.setCurrentSublistValue({}); //STUB***************Fulfillment TO unique key
+                        requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'custcol_cen_bulkfulfill_fulfillto', value: fulfillmentLineData.fulfillmentRecId}); //STUB***************Fulfillment TO
+                        requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'custcol_cen_bulkfulfill_linklinekey', value: fulfillmentLineData.fulfillmentLineIdUniqueKey}); //STUB***************Fulfillment TO unique key
                         requestTOrec.setCurrentSublistValue({sublistId: 'item', fieldId: 'closed', value: true}); //STUB***************
                         requestTOrec.commitLine({sublistId: 'item'});
     
                         //If there is remaining quantity to be fulfilled, create a new line to record it
                         if(newLineQty > 0){
                             requestTOrec.selectNewLine({sublistId: 'item'});
-                            requestTOrec.setCurrentSublistValue({}); //STUB***************Item
-                            requestTOrec.setCurrentSublistValue({}); //STUB***************Quantity
+                            requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'item', value: 190}); //STUB***************Item
+                            requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'quantity', value:}); //STUB***************Quantity
                             requestTOrec.commitLine({sublistId: 'item'});
                         } else if (newLineQty < 0){
                             log.error('New Line Qty less than zero', 'Fulfilled value passed exceeded the value of the original request line. '
@@ -65,7 +65,7 @@ define(['N/record'], function(record) {
                     } catch(e){
                         log.error('Unable to update request line', 'Fulfillment line data ' + JSON.stringify(fulfillmentLineData) + JSON.stringify(e));
                         lineLinkageErrors.push({
-                            "fulfillmentLineId": '', //STUB**********
+                            "fulfillmentLineId": currRec.getSublistValue({sublistId: 'item', fieldId: 'line', line: i}),, //STUB**********
                             "errorMessage": e.message
                         });
                     }
@@ -93,7 +93,7 @@ define(['N/record'], function(record) {
         var requestTOlines = {};
 
         for(var i=0; i<currRec.getLineCount({sublistId: 'item'}); i++){
-            var requestTOid = ''; //STUB
+            var requestTOid = currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_requestto', line: i});
 
             //If this request transfer order has not already been recorded in the data object, instantiate it
             if(!requestTOlines[requestTOid]){
@@ -102,10 +102,10 @@ define(['N/record'], function(record) {
 
             //Add the data about this specific line
             requestTOlines[requestTOid][i] = {
-                "fulfillmentRecId": '',
-                "fulfillmentLineId": i, //source line id on the fulfillment TO
-                "fulfillmentLineIdUniqueKey": '', //STUB**********
-                "quantity": '' //STUB************
+                "fulfillmentRecId": currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_fulfillto', line: i}),
+                "fulfillmentLineId": i, //currRec.getSublistValue({sublistId: 'item', fieldId: 'line', line: i}),
+                "fulfillmentLineIdUniqueKey": currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i}),
+                "quantity": currRec.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: i})
             }
         }
 
@@ -117,7 +117,7 @@ define(['N/record'], function(record) {
             var fulfillmentLineData = fulfillmentLines[lineNum];
 
             lineLinkageErrors.push({
-                "fulfillmentLineId": '', //STUB**********
+                "fulfillmentLineId": currRec.getSublistValue({sublistId: 'item', fieldId: 'line', line: i}),
                 "errorMessage": e.message
             });
         }
@@ -138,8 +138,8 @@ define(['N/record'], function(record) {
             var fulfillmentLineId = lineLinkageErrors[e]["fulfillmentLineId"];
             var errorMessage = lineLinkageErrors[e]["errorMessage"];
 
-            fulfillmentRec.selectLine({}); //*STUB***********
-            fulfillmentRec.setCurrentSublistValue({}); //*STUB**********
+            fulfillmentRec.selectLine({sublistId: 'item', line: i});
+            fulfillmentRec.setCurrentSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linkageerr', value: errorMessage});
             fulfillmentRec.commitLine({sublistId: 'item'});
         }
 

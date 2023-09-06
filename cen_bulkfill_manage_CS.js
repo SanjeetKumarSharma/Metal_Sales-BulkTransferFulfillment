@@ -10,8 +10,8 @@
  * Adds button to open the Suitelet and controls functionality of lines that have been cross-linked
 */
 
-define(['N/runtime','N/record','N/url'],
-function(runtime,record,url) {
+define(['N/runtime','N/record','N/url','N/error','N/ui/dialog'],
+function(runtime,record,url,error,dialog) {
     
     function pageInit(context){
        try{
@@ -44,6 +44,14 @@ function(runtime,record,url) {
                 //This line is linked to a fulfillment transfer order line
                 //Warn the user tha this line has already been fulfilled
                 //*STUB********
+                /*throw error.create({
+                    name: 'LINKED_TO_FULFILLMENT_TO',
+                    message: 'This line has already fulfilled'
+                 });*/
+                 dialog.alert({
+                    title: 'Linekd to Fulfillment Transfer Order',
+                    message: 'This line has already fulfilled.' 
+                }).then(success).catch(failure);
 
                 //Do not allow the delete action to proceed
                 return false
@@ -101,6 +109,12 @@ function(runtime,record,url) {
         for(var i = 0; i<currRec.getLineCount({sublistId: 'item'}); i++){
             //If the Request TO, Fulfillment TO, or Line Unique Key fields are populated, lock the line
             //STUB************
+           var requestTo= currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_requestto', line: i});
+           var fullfillmentTo=currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_fulfillto', line: i});
+           var lineUniqueKey=currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i});
+           if(!isEmpty(requestTo) || !isEmpty(fullfillmentTo) || !isEmpty(lineUniqueKey)){
+            currRec.setSublistValue({sublistId: 'item', fieldId: 'closed', line: i, value: true});
+           }
         }            
     }
 
@@ -120,6 +134,30 @@ function(runtime,record,url) {
         //Loop through the item sublist until the lineuniquekey value matches the target linkedLineKey
         //Once the line is found, mark it as open (closed = false)
         //STUB*************
+        for(var i = 0; i<requestTOrec.getLineCount({sublistId: 'item'}); i++){
+            var lineUniqueKey=requestTOrec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i});
+            if(lineUniqueKey==linkedLineKey){
+                requestTOrec.setSublistValue({sublistId: 'item', fieldId: 'closed', line: i, value: false});
+            }
+        }
+
+    }
+    function isEmpty(stValue) {
+        if ((stValue === '') || (stValue == null) || (stValue == undefined)) {
+            return true;
+        } else {
+            if (typeof stValue == 'string') {
+                if ((stValue == '')) {
+                    return true;
+                }
+            } else if (typeof stValue == 'object') {
+                if (stValue.length == 0 || stValue.length == 'undefined') {
+                    return true;
+                }
+            }
+    
+            return false;
+        }
     }
 
     return {

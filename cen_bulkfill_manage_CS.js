@@ -10,29 +10,11 @@
  * Adds button to open the Suitelet and controls functionality of lines that have been cross-linked
 */
 
-define(['N/runtime','N/record','N/url','N/error','N/ui/dialog'],
-function(runtime,record,url,error,dialog) {
-    
+define(['N/runtime','N/record','N/url','N/error','N/ui/dialog','N/currentRecord'],
+function(runtime,record,url,error,dialog,currentRecord) {
     function pageInit(context){
-       try{
-            var params = {
-                bulkFillRoles: runtime.getCurrentScript().getParameter({name: 'custscript_bulkfill_roles'}),
-                userRole: runtime.getCurrentUser().role
-            }
-            log.debug('Params Check', params);
-
-            if(bulkFillRoles.indexOf(userRole) >= 0 ){
-                addBulkFillButton(context);
-            }
-
-            var currRec = context.currentRecord;
-            lockAllLinkedLines(currRec);
-        
-        }catch(e){
-            log.error('ERROR', e);
-        }    
+      
     }
-
     function validateDelete(context){
         var currRec = context.currentRecord;
 
@@ -43,11 +25,6 @@ function(runtime,record,url,error,dialog) {
             if(fulfillmentTOid){
                 //This line is linked to a fulfillment transfer order line
                 //Warn the user tha this line has already been fulfilled
-                //*STUB********
-                /*throw error.create({
-                    name: 'LINKED_TO_FULFILLMENT_TO',
-                    message: 'This line has already fulfilled'
-                 });*/
                  dialog.alert({
                     title: 'Linekd to Fulfillment Transfer Order',
                     message: 'This line has already fulfilled.' 
@@ -72,23 +49,14 @@ function(runtime,record,url,error,dialog) {
     }
 
     /**
-     * Add a button with the label "Bulk Fulfill" to the Item sublist. Clicking calls the bulkFulfillClick
-     * function defined below
-     * @param {*} context 
-     */
-    function addBulkFillButton(context){
-        //STUB****************
-    }
-
-    /**
      * Opens the Bulk Fulfillment line selection suitelet. Called when the "Bulk Fulfill" button is selected
      * @param {*} fromLocation 
      * @param {*} toLocation 
      */
-    function bulkFulfillClick(fromLocation, toLocation){
+    function bulkFulfillClick(fromLocation,toLocation){
         var bulkfill_url = url.resolveScript({
-            scriptId: 'customscript_bulkfill_manage_sl',
-            deploymentId: 'customdeploy_cen_bulkfill_manage_sl',
+            scriptId: 'customscript_cen_blk_fulfill',
+            deploymentId: 'customdeploy1',
             returnExternalUrl: false,
             params: {
                 'from_location': fromLocation,
@@ -161,7 +129,8 @@ function(runtime,record,url,error,dialog) {
     }
 
     return {
-        pageInit: pageInit,
-        validateDelete: validateDelete
+         pageInit:pageInit,
+         validateDelete: validateDelete,
+         bulkFulfillClick:bulkFulfillClick
     }
 });

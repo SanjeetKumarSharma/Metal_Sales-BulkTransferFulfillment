@@ -7,8 +7,28 @@
 * 
 * Description: Performs cross-linkage of bulk fulfillment lines upon record save
 */
-define(['N/record'], function(record) {
-    
+define(['N/record', 'N/runtime','N/currentRecord'], function(record, runtime,currentRecord) {
+    function beforeLoad(context)
+    {
+        try{
+            if (context.type == context.UserEventType.EDIT){
+               var  bulkFillRoles =runtime.getCurrentScript().getParameter({name: 'custscript_bulkfill_roles'});
+              log.debug('roles',bulkFillRoles);
+               if(isEmpty(bulkFillRoles)){return;}
+               var  userRole = runtime.getCurrentUser().role;
+               var fromlocation= context.newRecord.getValue('location');
+               var toLocation=context.newRecord.getValue('transferlocation');
+            if(bulkFillRoles.indexOf(userRole) >= 0  ){ 
+                addBulkFillButton(context,fromlocation,toLocation);                
+            }
+        }
+           // var currRec = context.currentRecord;
+           // lockAllLinkedLines(currRec);
+        
+        }catch(e){
+            log.error('ERROR', e);
+        }        
+    }
     function afterSubmit(context) {
         try{
             var currRec = context.newRecord;
@@ -55,8 +75,8 @@ define(['N/record'], function(record) {
                         //If there is remaining quantity to be fulfilled, create a new line to record it
                         if(newLineQty > 0){
                             requestTOrec.selectNewLine({sublistId: 'item'});
-                            requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'item', value: 190}); //STUB***************Item
-                            requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'quantity', value:}); //STUB***************Quantity
+                            requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'item', value: ''}); //STUB***************Item
+                            requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'quantity', value:''}); //STUB***************Quantity
                             requestTOrec.commitLine({sublistId: 'item'});
                         } else if (newLineQty < 0){
                             log.error('New Line Qty less than zero', 'Fulfilled value passed exceeded the value of the original request line. '
@@ -65,7 +85,7 @@ define(['N/record'], function(record) {
                     } catch(e){
                         log.error('Unable to update request line', 'Fulfillment line data ' + JSON.stringify(fulfillmentLineData) + JSON.stringify(e));
                         lineLinkageErrors.push({
-                            "fulfillmentLineId": currRec.getSublistValue({sublistId: 'item', fieldId: 'line', line: i}),, //STUB**********
+                            "fulfillmentLineId": currRec.getSublistValue({sublistId: 'item', fieldId: 'line', line: i}),//STUB**********
                             "errorMessage": e.message
                         });
                     }
@@ -88,7 +108,16 @@ define(['N/record'], function(record) {
             log.error('Unable to complete cross-linkage', e);
         }
 	}
-
+    function addBulkFillButton(context,fromlocation,toLocation)
+    {
+        context.form.clientScriptModulePath = "SuiteScripts/cen_bulkfill_manage_CS.js" ;        
+        context.form.addButton({
+                    id: "custpage_bulkfulfill",
+                    label: "Bulk Fulfill",
+                    functionName: 'bulkFulfillClick("' + fromlocation + '","' + toLocation +'")'
+                }); 
+           
+    }
     function getRequestTOlines(currRec){
         var requestTOlines = {};
 
@@ -145,8 +174,26 @@ define(['N/record'], function(record) {
 
         fulfillmentRec.save();
     }
+   function isEmpty(stValue) {
+        if ((stValue === '') || (stValue == null) || (stValue == undefined)) {
+            return true;
+        } else {
+            if (typeof stValue == 'string') {
+                if ((stValue == '')) {
+                    return true;
+                }
+            } else if (typeof stValue == 'object') {
+                if (stValue.length == 0 || stValue.length == 'undefined') {
+                    return true;
+                }
+            }
+    
+            return false;
+        }
+    }
 
     return {
+        beforeLoad:beforeLoad,
         afterSubmit: afterSubmit
     };
 });

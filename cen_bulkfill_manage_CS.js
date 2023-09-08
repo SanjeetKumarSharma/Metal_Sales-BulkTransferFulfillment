@@ -10,11 +10,14 @@
  * Adds button to open the Suitelet and controls functionality of lines that have been cross-linked
 */
 
-define(['N/runtime','N/record','N/url','N/error','N/ui/dialog','N/currentRecord'],
-function(runtime,record,url,error,dialog,currentRecord) {
+define(['N/record','N/url','N/ui/dialog','N/currentRecord'],
+function(record,url,dialog,currentRecord) {
+    
     function pageInit(context){
-      
+        var currRec = context.currentRecord;
+        lockAllLinkedLines(currRec);
     }
+
     function validateDelete(context){
         var currRec = context.currentRecord;
 
@@ -25,9 +28,9 @@ function(runtime,record,url,error,dialog,currentRecord) {
             if(fulfillmentTOid){
                 //This line is linked to a fulfillment transfer order line
                 //Warn the user tha this line has already been fulfilled
-                 dialog.alert({
-                    title: 'Linekd to Fulfillment Transfer Order',
-                    message: 'This line has already fulfilled.' 
+                dialog.alert({
+                    title: 'Bulk Transfer Fulfillment',
+                    message: 'This line is linked to a fulfillment Transfer Order and cannot be modified.' 
                 }).then(success).catch(failure);
 
                 //Do not allow the delete action to proceed
@@ -42,6 +45,12 @@ function(runtime,record,url,error,dialog,currentRecord) {
                     return true
                 } catch(e){
                     log.error('Unable to reopen closed request line', e);
+                    dialog.alert({
+                        title: 'Bulk Transfer Fulfillment',
+                        message: 'This line is linked to a request Transfer Order and the script was unable to update the closed line on that request.' 
+                        + ' Please try again.'
+                    }).then(success).catch(failure);
+
                     return false
                 }
             }
@@ -49,11 +58,13 @@ function(runtime,record,url,error,dialog,currentRecord) {
     }
 
     /**
-     * Opens the Bulk Fulfillment line selection suitelet. Called when the "Bulk Fulfill" button is selected
-     * @param {*} fromLocation 
-     * @param {*} toLocation 
+     * Opens the Bulk Fulfillment line selection Suitelet. Called when the "Bulk Fulfill" button is selected
      */
-    function bulkFulfillClick(fromLocation,toLocation){
+    function bulkFulfillClick(){
+        var currRec = currentRecord.get();
+        var fromLocation = currRec.getValue('location');
+        var toLocation = currRec.getValue('transferlocation');
+        
         var bulkfill_url = url.resolveScript({
             scriptId: 'customscript_cen_blk_fulfill',
             deploymentId: 'customdeploy1',
@@ -76,13 +87,14 @@ function(runtime,record,url,error,dialog,currentRecord) {
         //Iterate through the item sublist on the current record
         for(var i = 0; i<currRec.getLineCount({sublistId: 'item'}); i++){
             //If the Request TO, Fulfillment TO, or Line Unique Key fields are populated, lock the line
-            //STUB************
-           var requestTo= currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_requestto', line: i});
-           var fullfillmentTo=currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_fulfillto', line: i});
-           var lineUniqueKey=currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i});
-           if(!isEmpty(requestTo) || !isEmpty(fullfillmentTo) || !isEmpty(lineUniqueKey)){
-            currRec.setSublistValue({sublistId: 'item', fieldId: 'closed', line: i, value: true});
-           }
+            var requestTo= currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_requestto', line: i});
+            var fullfillmentTo=currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_fulfillto', line: i});
+            var lineUniqueKey=currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i});
+            
+            if(!isEmpty(requestTo) || !isEmpty(fullfillmentTo) || !isEmpty(lineUniqueKey)){
+                //Loop through the fields in the line and change the display type to Disabled so that no edits can be made
+                //**STUB ********//
+            }
         }            
     }
 
@@ -101,15 +113,27 @@ function(runtime,record,url,error,dialog,currentRecord) {
 
         //Loop through the item sublist until the lineuniquekey value matches the target linkedLineKey
         //Once the line is found, mark it as open (closed = false)
-        //STUB*************
-        for(var i = 0; i<requestTOrec.getLineCount({sublistId: 'item'}); i++){
-            var lineUniqueKey=requestTOrec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i});
+        var lineFound = false;
+        var j=0;
+        while (!lineFound && j < requestTOrec.getLineCount('item')){
+            requestTOrec.selectLine({sublistId: 'item', line: j});
+            var lineUniqueKey=requestTOrec.getCurrentSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey'});
             if(lineUniqueKey==linkedLineKey){
-                requestTOrec.setSublistValue({sublistId: 'item', fieldId: 'closed', line: i, value: false});
+                lineFound = true;
+                requestTOrec.setCurrentSublistValue({sublistId: 'item', fieldId: 'isclosed', line: i, value: false});
+                requestTOrec.commitLine({sublistId: 'item'});
             }
+            j++;
         }
 
+        if(!lineFound){
+            log.error('Request line not found', 'User deleted fulfillment TO line which was tied to '
+            +'unique key ' + linkedLineKey + ' on TO ' + requestTOid);
+        }
+
+        requestTOrec.save();
     }
+
     function isEmpty(stValue) {
         if ((stValue === '') || (stValue == null) || (stValue == undefined)) {
             return true;

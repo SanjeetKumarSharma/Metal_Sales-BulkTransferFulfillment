@@ -135,7 +135,7 @@ define(['N/record', 'N/runtime','N/currentRecord'], function(record, runtime,cur
                 "fulfillmentLineId": i, //currRec.getSublistValue({sublistId: 'item', fieldId: 'line', line: i}),
                 "fulfillmentLineIdUniqueKey": currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i}),
                 "quantity": currRec.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: i}),
-                'item':currRec.getSublistValue({sublistId: 'item', fieldId: 'item', line: i}),
+                'item':currRec.getSublistValue({sublistId: 'item', fieldId: 'item', line: i})
             }
         }
 

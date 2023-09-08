@@ -57,7 +57,7 @@ define(['N/record', 'N/runtime','N/currentRecord'], function(record, runtime,cur
                     var fulfillmentLineData = requestTOlines[requestTOid][lineNum];
 
                     try{
-                        requestTOrec.selectLine({}); //STUB***********
+                        requestTOrec.selectLine({sublistId: 'item',line:lineNum}); //STUB***********
                         //Record the requested quantity to determine if a remaining balance will be unfulfilled
                         //and needs to be recorded on a new line
                         var requestQty = requestTOrec.getCurrentSublistValue({sublistId: 'item', fieldId: 'quantity'});
@@ -75,8 +75,8 @@ define(['N/record', 'N/runtime','N/currentRecord'], function(record, runtime,cur
                         //If there is remaining quantity to be fulfilled, create a new line to record it
                         if(newLineQty > 0){
                             requestTOrec.selectNewLine({sublistId: 'item'});
-                            requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'item', value: ''}); //STUB***************Item
-                            requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'quantity', value:''}); //STUB***************Quantity
+                            requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'item', value: fulfillmentLineData.item}); //STUB***************Item
+                            requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'quantity', value:newLineQty}); //STUB***************Quantity
                             requestTOrec.commitLine({sublistId: 'item'});
                         } else if (newLineQty < 0){
                             log.error('New Line Qty less than zero', 'Fulfilled value passed exceeded the value of the original request line. '
@@ -85,7 +85,7 @@ define(['N/record', 'N/runtime','N/currentRecord'], function(record, runtime,cur
                     } catch(e){
                         log.error('Unable to update request line', 'Fulfillment line data ' + JSON.stringify(fulfillmentLineData) + JSON.stringify(e));
                         lineLinkageErrors.push({
-                            "fulfillmentLineId": currRec.getSublistValue({sublistId: 'item', fieldId: 'line', line: i}),//STUB**********
+                            "fulfillmentLineId": requestTOrec.getSublistValue({sublistId: 'item', fieldId: 'line'}),//STUB**********
                             "errorMessage": e.message
                         });
                     }
@@ -96,7 +96,7 @@ define(['N/record', 'N/runtime','N/currentRecord'], function(record, runtime,cur
                 } catch(e){
                     log.error('Failed to save request record', JSON.stringify(e) + ' Line Data: ' + JSON.stringify(requestTOlines[requestTOid]));
                     //Update all the lines for this request TO with the error message
-                    lineLinkageErrors = addRecordLevelError(lineLinkageErrors, requestTOlines[requestTOid], e);
+                    lineLinkageErrors = addRecordLevelError(lineLinkageErrors, requestTOlines[requestTOid], e,requestTOrec);
                 }
             }
 
@@ -134,19 +134,20 @@ define(['N/record', 'N/runtime','N/currentRecord'], function(record, runtime,cur
                 "fulfillmentRecId": currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_fulfillto', line: i}),
                 "fulfillmentLineId": i, //currRec.getSublistValue({sublistId: 'item', fieldId: 'line', line: i}),
                 "fulfillmentLineIdUniqueKey": currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i}),
-                "quantity": currRec.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: i})
+                "quantity": currRec.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: i}),
+                'item':currRec.getSublistValue({sublistId: 'item', fieldId: 'item', line: i}),
             }
         }
 
         return requestTOlines
     }
 
-    function addRecordLevelError(lineLinkageErrors, fulfillmentLines, e){
+    function addRecordLevelError(lineLinkageErrors, fulfillmentLines, e,requestTOrec){
         for(lineNum in fulfillmentLines){
             var fulfillmentLineData = fulfillmentLines[lineNum];
 
             lineLinkageErrors.push({
-                "fulfillmentLineId": currRec.getSublistValue({sublistId: 'item', fieldId: 'line', line: i}),
+                "fulfillmentLineId": requestTOrec.getSublistValue({sublistId: 'item', fieldId: 'line', line: lineNum}),
                 "errorMessage": e.message
             });
         }

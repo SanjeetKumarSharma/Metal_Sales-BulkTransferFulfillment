@@ -95,12 +95,11 @@ function(record,url,dialog,currentRecord) {
             
             if(!isEmpty(requestTo) || !isEmpty(fullfillmentTo) || !isEmpty(lineUniqueKey)){
                 //Loop through the fields in the line and change the display type to Disabled so that no edits can be made
-                //**STUB ********//
                 
                 var ITEM_FIELD_LIST = ["amount","amounthasbeenset","backordered","billvariancestatusallbook","binitem","commitinventory","commitmentfirm","costingmethod","custcol_cen_bulkfulfill_linklinekey","custcol_cen_bulkfulfill_requestto","custcol_cen_bulkfulfill_requestto_display","custcol_oz_item_class","custcol_oz_itemtype","ddistrib","description","fulfillable","groupclosed","id","includegroupwrapper","initquantity","inventorydetailavail","isclosed","isnoninventory","isnumbered","isserial","item","item_display","itempacked","itempicked","itemtype","line","lineuniquekey","linked","linkedordbill","linkedshiprcpt","locationusesbins","noprint","oldcommitmentfirm","olditemid","onorder","printitems","quantity","quantityavailable","quantitycommitted","quantityfulfilled","quantitypacked","quantitypicked","quantityreceived","rate","sys_id","sys_parentid","unitconversionrate","units","units_display"];
                 for (var f in ITEM_FIELD_LIST) {
         	
-                    var objField = currRec.getSublistField({
+                    currRec.getSublistField({
                         sublistId: 'item',
                         fieldId: ITEM_FIELD_LIST[f],
                         line: i

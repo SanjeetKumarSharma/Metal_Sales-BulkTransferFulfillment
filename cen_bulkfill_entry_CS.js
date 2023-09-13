@@ -164,7 +164,11 @@ define(['N/currentRecord', 'N/url'],
 
                     //Create the line and populate the values
                     console.log(lineData);
-                    //***STUB************ */
+                    window.opener.nlapiSelectNewLineItem('item');
+                    for(var field in lineData){
+                        window.opener.nlapiSetCurrentLineItemValue('item', field, lineData[field]);
+                    }
+                    window.opener.nlapiCommitLineItem('item');
                 }
 
                 //Save complete. Close the window

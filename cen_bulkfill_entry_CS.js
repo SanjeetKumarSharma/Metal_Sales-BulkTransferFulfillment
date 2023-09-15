@@ -53,7 +53,6 @@ define(['N/currentRecord', 'N/url'],
                 //Iterate over the line items to calculate Total Quantity Selected
                 //Total Quantity Selected = Sum of Quantity to Fulfill for all lines with the checkbox selected
                 var linecount=currRec.getLineCount({sublistId: "custpage_to_request_lines"});
-                //alert(linecount);
                 for(var i=0; i<linecount; i++){
                 
                     currRec.selectLine({sublistId: 'custpage_to_request_lines', line: i});
@@ -87,7 +86,6 @@ define(['N/currentRecord', 'N/url'],
         function onSubmitClick() {
           debugger;
             var title = "onSubmitClick";
-            alert(title);
             try {
                 //Get the request line data
                 var linesToAdd = [];
@@ -159,17 +157,21 @@ define(['N/currentRecord', 'N/url'],
                 }
 
                 //Write the request line data back to the triggering Transfer Order
-                for (lineIndex in linesToAdd) {
-                    var lineData = linesToAdd[lineIndex];
+                window.opener.require(['N/currentRecord'], function(currentRecord){
+                    var currRec = currentRecord.get();
+        
+                    for (lineIndex in linesToAdd) {
+                        var lineData = linesToAdd[lineIndex];
 
-                    //Create the line and populate the values
-                    console.log(lineData);
-                    window.opener.nlapiSelectNewLineItem('item');
-                    for(var field in lineData){
-                        window.opener.nlapiSetCurrentLineItemValue('item', field, lineData[field]);
+                        //Create the line and populate the values
+                        console.log(lineData);
+                        currRec.selectNewLine('item');
+                        for(var field in lineData){
+                            currRec.setCurrentSublistValue('item', field, lineData[field]);
+                        }
+                        currRec.commitLine('item');
                     }
-                    window.opener.nlapiCommitLineItem('item');
-                }
+                });
 
                 //Save complete. Close the window
                 return true
@@ -186,15 +188,24 @@ define(['N/currentRecord', 'N/url'],
          */
         function onCancelClick() {
             var title = "onCancelClick";
-            alert(title);
             try {
                 console.log(title);
-              window.location.href = '/app/center/card.nl?sc=-29&whence=';
-             // window.close();
-             // window.top.close();
+                window.close();
             } catch (e) {
                 console.error(title + ' | Exception: ' + e.toString());
                 log.error(title + ' | Exception', e);
+            }
+        }
+
+        /**
+         * Used to hold execution of next asynchronous call for a number of milliseconds
+         * @param {*} ms 
+         */
+        function wait(ms){
+            var start = Date.now();
+            var now = start;
+            while (now - start < ms) {
+                now = Date.now();
             }
         }
 

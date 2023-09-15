@@ -16,7 +16,16 @@ function(record,url,dialog,currentRecord) {
     function pageInit(context){
         debugger;
         var currRec = context.currentRecord;
+        
         lockAllLinkedLines(currRec);
+
+        // Add an event listener to listen for messages from the Suitelet window
+        // window.addEventListener('message', function (event) {
+        //     var suiteletData = JSON.parse(event.data);
+        
+        //     console.log('Received data from Suitelet:', suiteletData);
+        //     writeSuiteletDataToRecord(currRec, suiteletData);
+        // });
     }
 
     function validateDelete(context){
@@ -165,8 +174,8 @@ function(record,url,dialog,currentRecord) {
     }
 
     return {
-         pageInit:pageInit,
+         pageInit: pageInit,
          validateDelete: validateDelete,
-         bulkFulfillClick:bulkFulfillClick
+         bulkFulfillClick: bulkFulfillClick
     }
 });

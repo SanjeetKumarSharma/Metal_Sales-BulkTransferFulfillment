@@ -282,12 +282,12 @@
             sublist.setSublistValue({
                 id: 'custpage_quantity',
                 line: k,
-                value: requestedQuantity
+                value: requestedQuantity * -1
             });
             sublist.setSublistValue({
                 id: 'custpage_quantity_to_fullfill',
                 line: k,
-                value: requestedQuantity
+                value: requestedQuantity * -1
             });
         }
 

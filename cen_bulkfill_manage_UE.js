@@ -7,22 +7,14 @@
 * 
 * Description: Performs cross-linkage of bulk fulfillment lines upon record save
 */
-define(['N/record', 'N/runtime'], function(record, runtime) {
+define(['N/record'], function(record) {
     function beforeLoad(context){
         try{
-            //If the user has the appropriate role based on the script parameter, 
-            if (context.type == context.UserEventType.EDIT){
-                var  bulkFillRoles = runtime.getCurrentScript().getParameter({name: 'custscript_bulkfill_roles'});
-                log.debug('roles',bulkFillRoles);
-                //If the roles parameter has not been filled out, stop processing
-                if(isEmpty(bulkFillRoles)){ return; }
-
-                var  userRole = runtime.getCurrentUser().role;
-            
-                bulkFillRoles = bulkFillRoles.replace(" ","").split(",");
-                if(bulkFillRoles.indexOf(userRole) >= 0  ){ 
-                    addBulkFillButton(context);                
-                }
+            //Note: control is also established by the Audience roles selected in the Deployment 
+            if (context.type != context.UserEventType.VIEW){
+                addBulkFillButton(context);
+            } else {
+                log.debug('Skipped adding button', 'Context ' + context.type + ' is out of scope.');
             }
         
         }catch(e){

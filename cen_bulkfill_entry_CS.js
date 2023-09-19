@@ -13,6 +13,18 @@
 define(['N/currentRecord', 'N/url'],
     function(currentRecord, url) {
          
+        function pageInit(context){
+            //If the item has not been selected yet, don't display a warning when the page is
+            //about to reload
+            var currRec = context.currentRecord;
+            var itemId = currRec.getValue({fieldId: 'custpage_item'});
+
+            if(!itemId){
+                console.log('No item selected. Suppressing page reload warning');
+                window.onbeforeunload = null;
+            }
+        }
+        
         function fieldChanged(context) {
             debugger;
             var title = "onFieldChange";
@@ -31,12 +43,12 @@ define(['N/currentRecord', 'N/url'],
                     var toLocation = currRec.getValue({
                         fieldId: 'custpage_to_location_id'
                     });
-                    var ItemId = currRec.getValue({
+                    var itemId = currRec.getValue({
                         fieldId: 'custpage_item'
                     });
 
                     //Reload the Suitelet
-                    var serverUrl = '/app/site/hosting/scriptlet.nl?script=3071&deploy=1&from_location=' + fromLocation + '&to_location=' + toLocation + '&item=' + ItemId;
+                    var serverUrl = '/app/site/hosting/scriptlet.nl?script=3071&deploy=1&from_location=' + fromLocation + '&to_location=' + toLocation + '&item=' + itemId;
                     window.location.href = serverUrl;
                 } catch (e) {
                     log.error('ERROR', e);
@@ -219,6 +231,7 @@ define(['N/currentRecord', 'N/url'],
         }
 
         return {
+            pageInit: pageInit,
             fieldChanged: fieldChanged,
             onCancelClick: onCancelClick,
             saveRecord: onSubmitClick

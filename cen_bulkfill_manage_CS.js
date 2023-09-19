@@ -34,7 +34,7 @@ function(record,url,dialog,currentRecord) {
                 dialog.alert({
                     title: 'Bulk Transfer Fulfillment',
                     message: 'This line is linked to a fulfillment Transfer Order and cannot be modified.' 
-                }).then(success).catch(failure);
+                });
 
                 //Do not allow the delete action to proceed
                 return false
@@ -52,10 +52,12 @@ function(record,url,dialog,currentRecord) {
                         title: 'Bulk Transfer Fulfillment',
                         message: 'This line is linked to a request Transfer Order and the script was unable to update the closed line on that request.' 
                         + ' Please try again.'
-                    }).then(success).catch(failure);
+                    });
 
                     return false
                 }
+            } else {
+                return true
             }
         }
     }
@@ -137,10 +139,11 @@ function(record,url,dialog,currentRecord) {
         var j=0;
         while (!lineFound && j < requestTOrec.getLineCount('item')){
             requestTOrec.selectLine({sublistId: 'item', line: j});
-            var lineUniqueKey=requestTOrec.getCurrentSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey'});
+            var lineUniqueKey=requestTOrec.getCurrentSublistValue({sublistId: 'item', fieldId: 'lineuniquekey'});
+            log.debug('lineUniqueKey', lineUniqueKey);
             if(lineUniqueKey==linkedLineKey){
                 lineFound = true;
-                requestTOrec.setCurrentSublistValue({sublistId: 'item', fieldId: 'isclosed', line: i, value: false});
+                requestTOrec.setCurrentSublistValue({sublistId: 'item', fieldId: 'isclosed', line: j, value: false});
                 requestTOrec.commitLine({sublistId: 'item'});
             }
             j++;

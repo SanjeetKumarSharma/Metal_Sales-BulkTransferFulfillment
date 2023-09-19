@@ -157,19 +157,28 @@ define(['N/currentRecord', 'N/url'],
                 }
 
                 //Write the request line data back to the triggering Transfer Order
+                
                 window.opener.require(['N/currentRecord'], function(currentRecord){
                     var currRec = currentRecord.get();
-        
+
                     for (lineIndex in linesToAdd) {
+        
                         var lineData = linesToAdd[lineIndex];
 
                         //Create the line and populate the values
                         console.log(lineData);
                         currRec.selectNewLine('item');
                         for(var field in lineData){
-                            currRec.setCurrentSublistValue('item', field, lineData[field]);
+                            currRec.setCurrentSublistValue({
+                                sublistId: 'item', 
+                                fieldId: field, 
+                                value: lineData[field],
+                                forceSyncSourcing: true
+                            });
                         }
                         currRec.commitLine('item');
+
+                        console.log('line ' + lineIndex + ' added');
                     }
                 });
 

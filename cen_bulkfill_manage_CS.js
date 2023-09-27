@@ -103,14 +103,16 @@ function(record,url,dialog,currentRecord) {
                 console.log("Locking line fields for linked Transfer Order: Line " + i + "; Fields: " + JSON.stringify(ITEM_FIELD_LIST));
                 
                 for (var f in ITEM_FIELD_LIST) {
-        	
+                    //Access the page elements by field name and line number to avoid locking the sublist field on all lines
                     var targetField = currRec.getSublistField({
                         sublistId: 'item',
                         fieldId: ITEM_FIELD_LIST[f],
                         line: i
-                    })
+                    });
+                    
                     if(targetField){
-                        targetField.isDisabled = true;
+                        //Uses standard DOM disabled parameter
+                        targetField.disabled = true;
                     } else {
                         console.log('Field not found for locking ' + ITEM_FIELD_LIST[f]);
                     }

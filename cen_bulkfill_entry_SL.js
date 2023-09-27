@@ -1,5 +1,5 @@
 /**
- *@NApiVersion 2.x
+ *@NApiVersion 2.1
  *@NModuleScope Public
  *@NScriptType Suitelet
  
@@ -12,9 +12,12 @@
  */
  var CONST_CLIENT_SCRIPT_PATH = 'SuiteScripts/cen_bulkfill_entry_CS.js';
  var clientScriptFileID = 27167004;
- define(['N/ui/serverWidget', 'N/search'], function(serverWidget, search) {
+ define(['N/ui/serverWidget', 'N/search', 'N/runtime'], 
+ function(serverWidget, search, runtime) {
  
-     function onRequest(context) {
+    var NEW_ALBANY_LOC = '';
+    
+    function onRequest(context) {
          var request = context.request;
          var response = context.response;
  
@@ -23,6 +26,19 @@
              from_location: request.parameters.from_location,
              to_location: request.parameters.to_location
          };
+
+         if(from_location != NEW_ALBANY_LOC){
+            //Only send New Albany as the from location to the search
+            //But wrap the value in an array to match the expected input type
+            var fromLocList = new Array;
+            fromLocList.append(params.from_location);
+         } else {
+            //Any corporate location can be selected
+            var fromLocList = runtime.getCurrentScript().getParameter({name: custscript_fromloc_list});
+            fromLocList.replace(" ","").split(",");
+            fromLocList.append(params.from_location);
+         }
+         params.from_location = fromLocList;
  
          if (request.method === 'GET') {
              try {
@@ -154,11 +170,11 @@
       * override the original quantity. Quantity to Fulfill should default to the original line quantity.
       * @param {object} sublist 
       * @param {internalid} itemId 
-      * @param {internalid} fromLoc 
+      * @param {internalid} fromLocList 
       * @param {internalid} toLoc 
       * @returns modified sublist object
       */
-     function populateLineItems(sublist, itemId, fromLoc, toLoc) {
+     function populateLineItems(sublist, itemId, fromLocList, toLoc) {
         sublist.addField({
             id: 'custpage_checkbox',
             type: serverWidget.FieldType.CHECKBOX,
@@ -227,7 +243,7 @@
                 ["status","anyof","TrnfrOrd:B"], "AND", //Pending Fulfillment
                 ["mainline", "is", "F"], "AND",
                 ["closed", "is", "F"], "AND",
-                ["location", "anyof", fromLoc],"AND",
+                ["location", "anyof", ...fromLocList],"AND",
                 ["transferlocation", "anyof", toLoc],"AND",                
                 ["item", "anyof", itemId]
             ],

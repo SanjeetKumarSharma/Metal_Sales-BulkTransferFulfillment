@@ -218,18 +218,6 @@ define(['N/currentRecord', 'N/url'],
             }
         }
 
-        /**
-         * Used to hold execution of next asynchronous call for a number of milliseconds
-         * @param {*} ms 
-         */
-        function wait(ms){
-            var start = Date.now();
-            var now = start;
-            while (now - start < ms) {
-                now = Date.now();
-            }
-        }
-
         return {
             pageInit: pageInit,
             fieldChanged: fieldChanged,

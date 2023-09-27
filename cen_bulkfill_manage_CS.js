@@ -14,10 +14,35 @@ define(['N/record','N/url','N/ui/dialog','N/currentRecord'],
 function(record,url,dialog,currentRecord) {
     
     function pageInit(context){
-        debugger;
+        //debugger;
         var currRec = context.currentRecord;
         
-        lockAllLinkedLines(currRec);
+        var foundLocks = lockAllLinkedLines(currRec);
+
+        if(foundLocks){
+            //If at least one line was found and locked, also lock the header location fields
+            var locationField = currRec.getField('location');
+            locationField.isDisabled = true;
+
+            var toLocField = currRec.getField('transferlocation');
+            toLocField.isDisabled = true;
+        }
+    }
+
+    function fieldChanged(context){
+        var currRec = context.currentRecord;
+        if(context.sublistId == 'item' && context.fieldId == 'quantity'){
+            var initQuantity = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'initquantity'});
+            var newQuantity = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'quantity'});
+            console.log('Changed quantity field ' + initQuantity + ' --> ' + newQuantity);
+            if(newQuantity != initQuantity){
+                dialog.alert({
+                    title: 'Bulk Transfer Fulfillment',
+                    message: 'This line is linked to a request line on another Transfer Order. Quantity cannot be modified.' 
+                });
+                currRec.setCurrentSublistValue({sublistId: 'item', fieldId: 'quantity', value: initQuantity});
+            }
+        }
     }
 
     function validateDelete(context){
@@ -75,6 +100,8 @@ function(record,url,dialog,currentRecord) {
      * @param {*} currRec 
      */
     function lockAllLinkedLines(currRec){
+        var foundLocks = false;
+        
         //Iterate through the item sublist on the current record
         for(var i = 0; i<currRec.getLineCount({sublistId: 'item'}); i++){
             //If the Request TO, Fulfillment TO, or Line Unique Key fields are populated, lock the line
@@ -83,9 +110,12 @@ function(record,url,dialog,currentRecord) {
             var lineUniqueKey=currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i});
             
             if(!isEmpty(requestTo) || !isEmpty(fullfillmentTo) || !isEmpty(lineUniqueKey)){
+                foundLocks = true;
                 //Loop through the fields in the line and change the display type to Disabled so that no edits can be made
                 //var ITEM_FIELD_LIST = ["amount","amounthasbeenset","backordered","billvariancestatusallbook","binitem","commitinventory","commitmentfirm","costingmethod","custcol_cen_bulkfulfill_linklinekey","custcol_cen_bulkfulfill_requestto","custcol_cen_bulkfulfill_requestto_display","custcol_oz_item_class","custcol_oz_itemtype","ddistrib","description","fulfillable","groupclosed","id","includegroupwrapper","initquantity","inventorydetailavail","isclosed","isnoninventory","isnumbered","isserial","item","item_display","itempacked","itempicked","itemtype","line","lineuniquekey","linked","linkedordbill","linkedshiprcpt","locationusesbins","noprint","oldcommitmentfirm","olditemid","onorder","printitems","quantity","quantityavailable","quantitycommitted","quantityfulfilled","quantitypacked","quantitypicked","quantityreceived","rate","sys_id","sys_parentid","unitconversionrate","units","units_display"];
-                var ITEM_FIELD_LIST = ["item", "quantity"];
+                //var ITEM_FIELD_LIST = ["item", "quantity", "initquantity"];
+                //NOTE: setting isDisabled to true on the quantity field appears to have no effect.
+                var ITEM_FIELD_LIST = ["item"];
                 console.log("Locking line fields for linked Transfer Order: Line " + i + "; Fields: " + JSON.stringify(ITEM_FIELD_LIST));
                 
                 for (var f in ITEM_FIELD_LIST) {
@@ -97,15 +127,16 @@ function(record,url,dialog,currentRecord) {
                     });
 
                     if(targetField){
-                        //Uses standard DOM disabled parameter
-                        targetField.disabled = true;
+                        targetField.isDisabled = true;
+                        console.log('Field locked', ITEM_FIELD_LIST[f] + ' : ' + JSON.stringify(targetField));
                     } else {
                         console.log('Field not found for locking ' + ITEM_FIELD_LIST[f]);
                     }
                     
                 }
             }
-        }            
+        }
+        return foundLocks            
     }
 
     function isEmpty(stValue) {
@@ -128,6 +159,7 @@ function(record,url,dialog,currentRecord) {
 
     return {
          pageInit: pageInit,
+         fieldChanged: fieldChanged,
          validateDelete: validateDelete,
          bulkFulfillClick: bulkFulfillClick
     }

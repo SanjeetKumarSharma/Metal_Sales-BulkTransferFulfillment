@@ -7,7 +7,7 @@
 * 
 * Description: Performs cross-linkage of bulk fulfillment lines upon record save
 */
-define(['N/record'], function(record) {
+define(['N/record', 'N/error'], function(record, error) {
     function beforeLoad(context){
         try{
             //Note: control is also established by the Audience roles selected in the Deployment 
@@ -20,6 +20,71 @@ define(['N/record'], function(record) {
         }catch(e){
             log.error('ERROR', e);
         }        
+    }
+
+    function beforeSubmit(context){
+        //If the user has deleted any lines that are linked to request Transfer Orders,
+        //reopen the request lines
+        var newRec = context.newRecord;
+        var oldRec = context.oldRecord;
+
+        //Compare the request TO line data in the old and new records.
+        var originalLines = getRequestTOlines(oldRec);
+        var remainingLines = getRequestTOlines(newRec);
+        //Keep any lines that existed in the old record but not in the new record.
+        var linesToReopen = {};
+        for(requestTOid in originalLines){
+            if(originalLines[requestTOid] == remainingLines[requestTOid]){
+                //No action required if data did not change
+            } else {
+                linesToReopen[requestTOid] = {};
+                //Dig into the line data to see which lines for the TO group are missing in the new record
+                for(lineNum in originalLines[requestTOid]){
+                    targetLineKey = originalLines[requestTOid][lineNum];
+                    //Loop through the remaining lines for this TO group until the lineuniquekey value matches the target linkedLineKey
+                    var lineFound = false;
+                    for(lineNum in remainingLines[requestTOid]){
+                        evalLineKey = remainingLines[requestTOid][lineNum];
+                        if(evalLineKey==targetLineKey){
+                            lineFound = true;
+                        }
+                    }
+
+                    if(!lineFound){
+                        //Add it to the list of lines to reopen
+                        linesToReopen[requestTOid][lineNum] = originalLines[requestTOid][lineNum];
+                    }
+                }
+            }
+        }
+
+        for(requestTOid in linesToReopen){
+            try{
+                var requestTOrec = record.load({
+                    type: 'transferorder',
+                    id: requestTOid,
+                    isDynamic: true
+                });
+
+                for(lineNum in linesToReopen[requestTOid]){
+                    var fulfillmentLineData = linesToReopen[requestTOid][lineNum];
+                    //Reopen the closed line on the request TO
+                    reopenClosedLine(requestTOrec, fulfillmentLineData.requestLineUniqueKey);
+                }
+
+                requestTOrec.save();
+            } catch(e){
+                log.error('Unable to reopen closed request line', e);
+                throw error.create({
+                    name: 'UNABLE_TO_REOPEN_REQUEST_LINE',
+                    message: 'You have attempted to delete a line that is linked to a request Transfer Order and the script was '
+                    + 'unable to update the closed line on that request. Please try again or contact your Administrator.'
+                });
+            }
+        }
+
+        //If all reopening actions complete, allow the save to proceed.
+        return true
     }
 
     function afterSubmit(context) {
@@ -162,6 +227,36 @@ define(['N/record'], function(record) {
         return requestTOlines
     }
 
+    /**
+     * When a fulfillment line is deleted, use the line unique key value to identify the original request
+     * line and reopen that line on the requesting TO
+     * @param {*} requestTOrec 
+     * @param {*} linkedLineKey 
+     */
+    function reopenClosedLine(requestTOrec, linkedLineKey){
+
+        //Loop through the item sublist until the lineuniquekey value matches the target linkedLineKey
+        //Once the line is found, mark it as open (closed = false)
+        var lineFound = false;
+        var j=0;
+        while (!lineFound && j < requestTOrec.getLineCount('item')){
+            requestTOrec.selectLine({sublistId: 'item', line: j});
+            var lineUniqueKey=requestTOrec.getCurrentSublistValue({sublistId: 'item', fieldId: 'lineuniquekey'});
+            log.debug('lineUniqueKey', lineUniqueKey);
+            if(lineUniqueKey==linkedLineKey){
+                lineFound = true;
+                requestTOrec.setCurrentSublistValue({sublistId: 'item', fieldId: 'isclosed', line: j, value: false});
+                requestTOrec.commitLine({sublistId: 'item'});
+            }
+            j++;
+        }
+
+        if(!lineFound){
+            log.error('Request line not found', 'User deleted fulfillment TO line which was tied to '
+            +'unique key ' + linkedLineKey + ' on TO ' + requestTOid);
+        }
+    }
+
     function addRecordLevelError(lineLinkageErrors, fulfillmentLines, e){
         for(lineNum in fulfillmentLines){
 
@@ -215,6 +310,7 @@ define(['N/record'], function(record) {
 
     return {
         beforeLoad:beforeLoad,
+        beforeSubmit: beforeSubmit,
         afterSubmit: afterSubmit
     };
 });

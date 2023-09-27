@@ -15,7 +15,7 @@
  define(['N/ui/serverWidget', 'N/search', 'N/runtime'], 
  function(serverWidget, search, runtime) {
  
-    var NEW_ALBANY_LOC = '';
+    var NEW_ALBANY_LOC = '125';
     
     function onRequest(context) {
          var request = context.request;
@@ -27,18 +27,19 @@
              to_location: request.parameters.to_location
          };
 
-         if(from_location != NEW_ALBANY_LOC){
+         if(params.from_location == NEW_ALBANY_LOC){
             //Only send New Albany as the from location to the search
             //But wrap the value in an array to match the expected input type
             var fromLocList = new Array;
-            fromLocList.append(params.from_location);
+            fromLocList.push(params.from_location);
          } else {
             //Any corporate location can be selected
-            var fromLocList = runtime.getCurrentScript().getParameter({name: custscript_fromloc_list});
-            fromLocList.replace(" ","").split(",");
-            fromLocList.append(params.from_location);
+            var fromLocList = runtime.getCurrentScript().getParameter({name: 'custscript_fromloc_list'});
+            fromLocList = fromLocList.replace(" ","").split(",");
+            fromLocList.push(params.from_location);
          }
          params.from_location = fromLocList;
+         log.debug('params check', params);
  
          if (request.method === 'GET') {
              try {
@@ -78,18 +79,33 @@
                  container: 'custpage_header_group'
              });
              item_field.defaultValue = params.item;
- 
-             var from_loc_field = form.addField({
-                 id: 'custpage_from_location_id',
-                 label: "From Location",
-                 type: serverWidget.FieldType.SELECT,
-                 source : 'location',
-                 container: 'custpage_header_group'
-             });
+
+             //If all corporate locations are shown, display that as a text message
+             //If only one location is being used, display that location name using the internal id
+             if(params.from_location.length > 1){
+                var from_loc_field = form.addField({
+                    id: 'custpage_from_location_id',
+                    label: "From Location",
+                    type: serverWidget.FieldType.TEXT,
+                    source : 'location',
+                    container: 'custpage_header_group'
+                });
+                from_loc_field.defaultValue = "All Corporate";
+             } else {
+                //Convert internalid to name by using a select field
+                var from_loc_field = form.addField({
+                    id: 'custpage_from_location_id',
+                    label: "From Location",
+                    type: serverWidget.FieldType.SELECT,
+                    source : 'location',
+                    container: 'custpage_header_group'
+                });
+                from_loc_field.defaultValue = params.from_location[0];
+             }
              from_loc_field.updateDisplayType({
-                 displayType: serverWidget.FieldDisplayType.INLINE
-             });
-             from_loc_field.defaultValue = params.from_location;
+                displayType: serverWidget.FieldDisplayType.INLINE
+            });
+             
  
              var to_loc_field = form.addField({
                  id: 'custpage_to_location_id',

@@ -39,23 +39,9 @@ function(record,url,dialog,currentRecord) {
                 //Do not allow the delete action to proceed
                 return false
             } else if(requestTOid){
-                try{
-                    //Reopen the closed line on the request TO
-                    var linkedLineKey = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey'});
-                    reopenClosedLine(requestTOid, linkedLineKey);
-
-                    //Allow the deletion action to complete
-                    return true
-                } catch(e){
-                    log.error('Unable to reopen closed request line', e);
-                    dialog.alert({
-                        title: 'Bulk Transfer Fulfillment',
-                        message: 'This line is linked to a request Transfer Order and the script was unable to update the closed line on that request.' 
-                        + ' Please try again.'
-                    });
-
-                    return false
-                }
+                //Moved reopen closed line function to beforeSubmit action. 
+                //If reopening fails, all record changes will not be saved
+                return true
             } else {
                 return true
             }
@@ -109,7 +95,7 @@ function(record,url,dialog,currentRecord) {
                         fieldId: ITEM_FIELD_LIST[f],
                         line: i
                     });
-                    
+
                     if(targetField){
                         //Uses standard DOM disabled parameter
                         targetField.disabled = true;
@@ -120,43 +106,6 @@ function(record,url,dialog,currentRecord) {
                 }
             }
         }            
-    }
-
-    /**
-     * When a fulfillment line is deleted, use the line unique key value to identify the original request
-     * line and reopen that line on the requesting TO
-     * @param {*} requestTOid 
-     * @param {*} linkedLineKey 
-     */
-    function reopenClosedLine(requestTOid, linkedLineKey){
-        var requestTOrec = record.load({
-            type: 'transferorder',
-            id: requestTOid,
-            isDynamic: true
-        });
-
-        //Loop through the item sublist until the lineuniquekey value matches the target linkedLineKey
-        //Once the line is found, mark it as open (closed = false)
-        var lineFound = false;
-        var j=0;
-        while (!lineFound && j < requestTOrec.getLineCount('item')){
-            requestTOrec.selectLine({sublistId: 'item', line: j});
-            var lineUniqueKey=requestTOrec.getCurrentSublistValue({sublistId: 'item', fieldId: 'lineuniquekey'});
-            log.debug('lineUniqueKey', lineUniqueKey);
-            if(lineUniqueKey==linkedLineKey){
-                lineFound = true;
-                requestTOrec.setCurrentSublistValue({sublistId: 'item', fieldId: 'isclosed', line: j, value: false});
-                requestTOrec.commitLine({sublistId: 'item'});
-            }
-            j++;
-        }
-
-        if(!lineFound){
-            log.error('Request line not found', 'User deleted fulfillment TO line which was tied to '
-            +'unique key ' + linkedLineKey + ' on TO ' + requestTOid);
-        }
-
-        requestTOrec.save();
     }
 
     function isEmpty(stValue) {

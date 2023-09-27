@@ -30,7 +30,9 @@ define(['N/record', 'N/error'], function(record, error) {
 
         //Compare the request TO line data in the old and new records.
         var originalLines = getRequestTOlines(oldRec);
+        log.debug('originalLines', originalLines);
         var remainingLines = getRequestTOlines(newRec);
+        log.debug('remainingLines', remainingLines);
         //Keep any lines that existed in the old record but not in the new record.
         var linesToReopen = {};
         for(requestTOid in originalLines){
@@ -40,11 +42,11 @@ define(['N/record', 'N/error'], function(record, error) {
                 linesToReopen[requestTOid] = {};
                 //Dig into the line data to see which lines for the TO group are missing in the new record
                 for(lineNum in originalLines[requestTOid]){
-                    targetLineKey = originalLines[requestTOid][lineNum];
+                    targetLineKey = originalLines[requestTOid][lineNum].requestLineUniqueKey;
                     //Loop through the remaining lines for this TO group until the lineuniquekey value matches the target linkedLineKey
                     var lineFound = false;
                     for(lineNum in remainingLines[requestTOid]){
-                        evalLineKey = remainingLines[requestTOid][lineNum];
+                        evalLineKey = remainingLines[requestTOid][lineNum].requestLineUniqueKey;
                         if(evalLineKey==targetLineKey){
                             lineFound = true;
                         }
@@ -55,8 +57,13 @@ define(['N/record', 'N/error'], function(record, error) {
                         linesToReopen[requestTOid][lineNum] = originalLines[requestTOid][lineNum];
                     }
                 }
+                //If no missing lines were found, the remove the key for this requestTOid
+                if(Object.keys(linesToReopen[requestTOid]).length == 0){
+                    delete linesToReopen[requestTOid];
+                }
             }
         }
+        log.debug('linesToReopen', linesToReopen);
 
         for(requestTOid in linesToReopen){
             try{

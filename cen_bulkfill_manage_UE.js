@@ -23,6 +23,12 @@ define(['N/record', 'N/error'], function(record, error) {
     }
 
     function beforeSubmit(context){
+        
+        if(context.type == 'create'){
+            //No need to consider line deletions on new records
+            return
+        }
+        
         //If the user has deleted any lines that are linked to request Transfer Orders,
         //reopen the request lines
         var newRec = context.newRecord;
@@ -120,6 +126,7 @@ define(['N/record', 'N/error'], function(record, error) {
                 //Update the corresponding lines on the request TO to complete the cross-linkage
                 for(lineNum in requestTOlines[requestTOid]){
                     var fulfillmentLineData = requestTOlines[requestTOid][lineNum];
+                    log.debug('fulfillmentLineData', fulfillmentLineData);
 
                     try{
                         //Loop over the request TO lines until one with the matching unique key is found
@@ -130,6 +137,7 @@ define(['N/record', 'N/error'], function(record, error) {
 
                             var lineUniqueKey = requestTOrec.getCurrentSublistValue({sublistId: 'item', fieldId: 'lineuniquekey'});
                             if(lineUniqueKey != fulfillmentLineData.requestLineUniqueKey){
+                                //log.debug('Searching ' + requestTOid, lineUniqueKey + ' != ' + fulfillmentLineData.requestLineUniqueKey);
                                 j++
                                 continue
                             }
@@ -142,19 +150,22 @@ define(['N/record', 'N/error'], function(record, error) {
                             if(fulfillmentLineData.quantity != requestQty){
                                 requestTOrec.setCurrentSublistValue({sublistId: 'item', fieldId: 'quantity', value: fulfillmentLineData.quantity});
                                 newLineQty = requestQty - fulfillmentLineData.quantity;
+                                log.debug('Line Delta', requestQty + ' - ' + fulfillmentLineData.quantity + ' = ' + newLineQty);
                             }
         
                             requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'custcol_cen_bulkfulfill_fulfillto', value: fulfillmentLineData.fulfillmentRecId});
                             requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'custcol_cen_bulkfulfill_linklinekey', value: fulfillmentLineData.fulfillmentLineUniqueKey});
                             requestTOrec.setCurrentSublistValue({sublistId: 'item', fieldId: 'isclosed', value: true});
                             requestTOrec.commitLine({sublistId: 'item'});
+                            log.debug('Update committed', fulfillmentLineData);
         
                             //If there is remaining quantity to be fulfilled, create a new line to record it
                             if(newLineQty > 0){
                                 requestTOrec.selectNewLine({sublistId: 'item'});
                                 requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'item', value: fulfillmentLineData.item});
-                                requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'quantity', value:newLineQty});
+                                requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'quantity', value: newLineQty});
                                 requestTOrec.commitLine({sublistId: 'item'});
+                                log.debug('Underfulfillment delta committed', newLineQty);
                             } else if (newLineQty < 0){
                                 log.error('New Line Qty less than zero', 'Fulfilled value passed exceeded the value of the original request line. '
                                 + 'This is an invalid condition and will not be recorded.');
@@ -163,7 +174,7 @@ define(['N/record', 'N/error'], function(record, error) {
                         
                         if(!lineFound){
                             //If no matching line is found in the record after looping over all of the lines, log an error
-                            log.error('Request line not found', 'Fulfillment line data ' + JSON.stringify(fulfillmentLineData) + JSON.stringify(e));
+                            log.error('Request line not found', 'Fulfillment line data ' + JSON.stringify(fulfillmentLineData));
                             lineLinkageErrors.push({
                                 "fulfillmentLineId": lineNum,
                                 "errorMessage": "Request line not found on request TO."
@@ -227,7 +238,7 @@ define(['N/record', 'N/error'], function(record, error) {
                 "fulfillmentRecId": currRec.id,
                 "fulfillmentLineUniqueKey": currRec.getSublistValue({sublistId: 'item', fieldId: 'lineuniquekey', line: i}),
                 "quantity": currRec.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: i}),
-                "item": currRec.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: i})
+                "item": currRec.getSublistValue({sublistId: 'item', fieldId: 'item', line: i})
             }
         }
 

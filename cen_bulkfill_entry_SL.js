@@ -257,7 +257,8 @@
             filters: [
                 ["type", "anyof", "TrnfrOrd"], "AND",
                 ["status","anyof","TrnfrOrd:B"], "AND", //Pending Fulfillment
-                ["mainline", "is", "F"], "AND",
+                ["mainline", "is", "F"], "AND", 
+                ["transactionlinetype","anyof","ITEM"], "AND",
                 ["closed", "is", "F"], "AND",
                 ["location", "anyof", ...fromLocList],"AND",
                 ["transferlocation", "anyof", toLoc],"AND",                

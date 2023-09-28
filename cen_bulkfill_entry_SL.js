@@ -39,8 +39,6 @@
          } else {
             //Any corporate location can be selected
             var fromLocList = getCorporateSupplyLocations();
-            fromLocList = fromLocList.replace(" ","").split(",");
-            fromLocList.push(params.from_location);
 
             params.under_fulfill_margin = runtime.getCurrentScript().getParameter({name: 'custscript_underfulfillment_margin'});
             params.over_fulfill_margin = runtime.getCurrentScript().getParameter({name: 'custscript_overfulfillment_margin'});
@@ -361,6 +359,9 @@
 
         locationResults.each(function(result){
             locationList.push(result.id);
+
+            //Process next result
+            return true
         })
 
         return locationList

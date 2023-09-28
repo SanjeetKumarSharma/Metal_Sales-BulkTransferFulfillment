@@ -32,11 +32,18 @@
             //But wrap the value in an array to match the expected input type
             var fromLocList = new Array;
             fromLocList.push(params.from_location);
+
+            //For New Albany, create quantity delta lines for all differences
+            params.over_fulfill_margin = 0;
+            params.over_fulfill_margin = 0;
          } else {
             //Any corporate location can be selected
-            var fromLocList = runtime.getCurrentScript().getParameter({name: 'custscript_fromloc_list'});
+            var fromLocList = getCorporateSupplyLocations();
             fromLocList = fromLocList.replace(" ","").split(",");
             fromLocList.push(params.from_location);
+
+            params.under_fulfill_margin = runtime.getCurrentScript().getParameter({name: 'custscript_underfulfillment_margin'});
+            params.over_fulfill_margin = runtime.getCurrentScript().getParameter({name: 'custscript_overfulfillment_margin'});
          }
          params.from_location = fromLocList;
          log.debug('params check', params);
@@ -90,7 +97,7 @@
                     source : 'location',
                     container: 'custpage_header_group'
                 });
-                from_loc_field.defaultValue = "All Corporate";
+                from_loc_field.defaultValue = "All Corporate Supply Locations";
              } else {
                 //Convert internalid to name by using a select field
                 var from_loc_field = form.addField({
@@ -129,6 +136,28 @@
                  displayType: serverWidget.FieldDisplayType.INLINE
              });
              total_qty_field.defaultValue = 0;
+
+             var underfulfill_field = form.addField({
+                id: 'custpage_under_fulfill_margin',
+                label: "Underfulfillment Margin",
+                type: serverWidget.FieldType.FLOAT,
+                container: 'custpage_header_group'
+            });
+            underfulfill_field.updateDisplayType({
+                displayType: serverWidget.FieldDisplayType.HIDDEN
+            });
+            total_qty_field.defaultValue = params.under_fulfill_margin;
+
+            var overfulfill_field = form.addField({
+                id: 'custpage_over_fulfill_margin',
+                label: "Overfulfillment Margin",
+                type: serverWidget.FieldType.FLOAT,
+                container: 'custpage_header_group'
+            });
+            overfulfill_field.updateDisplayType({
+                displayType: serverWidget.FieldDisplayType.HIDDEN
+            });
+            total_qty_field.defaultValue = params.over_fulfill_margin;
  
              form.addButton({
                  id: 'btn_cancel',
@@ -152,19 +181,12 @@
  
                      sublist = populateLineItems(sublist, params.item, params.from_location, params.to_location);
  
-                 } else {
-                     var sublistMessage = form.addField({
-                         id: 'custpage_sublistmessage',
-                         type: serverWidget.FieldType.INLINEHTML,
-                         label: ''
-                     });
-                     sublistMessage.defaultValue = 'Please select an Item from the dropdown.'
-                 }
+                 } 
              } else {
                  var sublistMessage = form.addField({
                      id: 'custpage_sublistmessage',
                      type: serverWidget.FieldType.INLINEHTML,
-                     label: ''
+                     label: ' '
                  });
                  sublistMessage.defaultValue = 'Missing location selection(s). Please close this window and return to the Transfer Order page. ' +
                      'On the Transfer Order, select both the origin and destination locations for the material you wish to transfer. ' +
@@ -325,6 +347,23 @@
         }
 
         return sublist
+     }
+
+     function getCorporateSupplyLocations(){
+        var locationList = [];
+
+        var locationResults = search.create({
+            type: 'location',
+            filters: [
+                ["custrecord_corp_supply","is","T"]
+            ]
+        }).run();
+
+        locationResults.each(function(result){
+            locationList.push(result.id);
+        })
+
+        return locationList
      }
  
      return {

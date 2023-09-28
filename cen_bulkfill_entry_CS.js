@@ -104,6 +104,8 @@ define(['N/currentRecord', 'N/url'],
                 
                 var currRec = currentRecord.get();
                 var selectedItem = currRec.getValue('custpage_item');
+                var underFulfillMargin = currRec.getValue('custpage_under_fulfill_margin');
+                var overFulfillMargin = currRec.getValue('custpage_over_fulfill_margin');
 
                 //Iterate over the lines in the Suitelet
                 for (var i = 0; i < currRec.getLineCount({sublistId: "custpage_to_request_lines"}); i++) {
@@ -135,29 +137,44 @@ define(['N/currentRecord', 'N/url'],
                     });
 
                     if(isSelected){
+                        //Calculate the overfulfillment and underfulfillment thresholds
+                        var underFulfillThreshold = originalOpenQuantity - (originalOpenQuantity * underFulfillMargin);
+                        var overFulfillThreshold = originalOpenQuantity + (originalOpenQuantity * overFulfillMargin);
+                        
                         //If the "Quantity to Fulfill" value is greater than the original open quantity on the line
+                        //by more than the margin percentage specified in the script configuration
                         //populate the original open quantity into the Quantity field when creating the line copy.
                         var quantityDelta = lineQuantityToFulfill - originalOpenQuantity;
-                        if(quantityDelta > 0){
+                        if(lineQuantityToFulfill > overFulfillThreshold){
                             //Populate the original open quantity into the first line
                             linesToAdd.push({
                                 'item': selectedItem,
                                 'quantity': originalOpenQuantity,
                                 'custcol_cen_bulkfulfill_requestto': transferOrderId,
-                                'custcol_cen_bulkfulfill_linklinekey': lineLinkKey
+                                'custcol_cen_bulkfulfill_linklinekey': lineLinkKey,
+                                'custcol_cen_bulkfulfill_isoverfulfill': true
                             });
 
                             //Populate the quantity overage into an additional line. 
                             //Do not populate the transfer order id or line unique key on the additional line.
                             linesToAdd.push({
                                 'item': selectedItem,
-                                'quantity': quantityDelta
+                                'quantity': quantityDelta,
+                                'custcol_cen_bulkfulfill_isoverfulfill': true
                             });
-
                         
-                        } else {
+                        } else if(lineQuantityToFulfill < underFulfillThreshold) {
                             //Only populate one line, with Quantity to Fulfill in the Quantity field
-                            //Note: UE script will handle any negative quantity deltas
+                            //and flag for UE script to handle negative quantity delta
+                            linesToAdd.push({
+                                'item': selectedItem,
+                                'quantity': lineQuantityToFulfill,
+                                'custcol_cen_bulkfulfill_requestto': transferOrderId,
+                                'custcol_cen_bulkfulfill_linklinekey': lineLinkKey,
+                                'custcol_cen_bulkfulfill_isunderfulfil': true
+                            });
+                        } else {
+                            //Ignore any quantity deltas
                             linesToAdd.push({
                                 'item': selectedItem,
                                 'quantity': lineQuantityToFulfill,

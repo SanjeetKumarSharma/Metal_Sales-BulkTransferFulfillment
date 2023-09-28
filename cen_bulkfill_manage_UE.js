@@ -160,7 +160,7 @@ define(['N/record', 'N/error'], function(record, error) {
                             log.debug('Update committed', fulfillmentLineData);
         
                             //If there is remaining quantity to be fulfilled, create a new line to record it
-                            if(newLineQty > 0){
+                            if(newLineQty > 0 && fulfillmentLineData.isUnderfulfill){
                                 requestTOrec.selectNewLine({sublistId: 'item'});
                                 requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'item', value: fulfillmentLineData.item});
                                 requestTOrec.setCurrentSublistValue({sublistId: 'item',fieldId: 'quantity', value: newLineQty});
@@ -234,11 +234,12 @@ define(['N/record', 'N/error'], function(record, error) {
 
             //Add the data about this specific line
             requestTOlines[requestTOid][i] = {
+                "item": currRec.getSublistValue({sublistId: 'item', fieldId: 'item', line: i}),
+                "quantity": currRec.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: i}),
                 "requestLineUniqueKey": currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i}),
                 "fulfillmentRecId": currRec.id,
                 "fulfillmentLineUniqueKey": currRec.getSublistValue({sublistId: 'item', fieldId: 'lineuniquekey', line: i}),
-                "quantity": currRec.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: i}),
-                "item": currRec.getSublistValue({sublistId: 'item', fieldId: 'item', line: i})
+                "isUnderfulfill": currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_isunderfulfil', line: i})
             }
         }
 

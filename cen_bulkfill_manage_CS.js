@@ -10,37 +10,69 @@
  * Adds button to open the Suitelet and controls functionality of lines that have been cross-linked
 */
 
-define(['N/record','N/url','N/ui/dialog','N/currentRecord'],
-function(record,url,dialog,currentRecord) {
+define(['N/url','N/ui/dialog','N/currentRecord'],
+function(url,dialog,currentRecord) {
+    
+    //Global objects used to revert item sublist selections on linked lines
+    var ITEM_MEMORY = {};
+    var QUANTITY_MEMORY = {};
     
     function pageInit(context){
         //debugger;
         var currRec = context.currentRecord;
-        
-        var foundLocks = lockAllLinkedLines(currRec);
 
-        if(foundLocks){
-            //If at least one line was found and locked, also lock the header location fields
-            var locationField = currRec.getField('location');
-            locationField.isDisabled = true;
-
+        if(foundLinkedLines(currRec)){
+            //If at least one line was found and locked, also lock "to location" header field
+            //Do not lock from location, because fulfillment source may change
             var toLocField = currRec.getField('transferlocation');
             toLocField.isDisabled = true;
+
+            populateSublistMemory(currRec, ITEM_MEMORY, QUANTITY_MEMORY);
         }
     }
 
     function fieldChanged(context){
         var currRec = context.currentRecord;
-        if(context.sublistId == 'item' && context.fieldId == 'quantity'){
-            var initQuantity = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'initquantity'});
-            var newQuantity = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'quantity'});
-            console.log('Changed quantity field ' + initQuantity + ' --> ' + newQuantity);
-            if(newQuantity != initQuantity){
-                dialog.alert({
-                    title: 'Bulk Transfer Fulfillment',
-                    message: 'This line is linked to a request line on another Transfer Order. Quantity cannot be modified.' 
-                });
-                currRec.setCurrentSublistValue({sublistId: 'item', fieldId: 'quantity', value: initQuantity});
+        if(context.sublistId == 'item'){
+            var linkedLineKey=currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey'});
+            
+            if(isEmpty(linkedLineKey)){
+                //Do not protect any fields on lines that aren't linked to another transfer order
+                return
+            }
+
+            if(context.fieldId == 'item'){
+                origItem = ITEM_MEMORY[linkedLineKey];
+                newItem = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'item'});
+                console.log('Changed item field ' + origItem + ' --> ' + newItem);
+                if(origItem && newItem != origItem){
+                    dialog.alert({
+                        title: 'Bulk Transfer Fulfillment',
+                        message: 'This line is linked to a request line on another Transfer Order. Item cannot be modified.' 
+                    });
+                    currRec.setCurrentSublistValue({sublistId: 'item', fieldId: 'item', value: origItem});
+                }
+            }
+            
+            if(context.fieldId == 'quantity'){
+                var initQuantity = QUANTITY_MEMORY[linkedLineKey];
+                var newQuantity = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'quantity'});
+                console.log('Changed quantity field ' + initQuantity + ' --> ' + newQuantity);
+                if(initQuantity && newQuantity != initQuantity){
+                    dialog.alert({
+                        title: 'Bulk Transfer Fulfillment',
+                        message: 'This line is linked to a request line on another Transfer Order. Quantity cannot be modified.' 
+                    });
+                    currRec.setCurrentSublistValue({sublistId: 'item', fieldId: 'quantity', value: initQuantity});
+                }
+            }
+            
+            if(context.fieldId == 'custcol_cen_bulkfulfill_linklinekey'){
+                //When a new linked line is added, remember the item selected at the time of addition
+                var selectedItem = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'item'});
+                var selectedQuantity = currRec.getCurrentSublistValue({sublistId: 'item', fieldId: 'quantity'});
+                ITEM_MEMORY[linkedLineKey] = selectedItem;
+                QUANTITY_MEMORY[linkedLineKey] = selectedQuantity;
             }
         }
     }
@@ -94,49 +126,42 @@ function(record,url,dialog,currentRecord) {
     }
 
     /**
-     * Prevents changes to any lines on the current record that have been cross-linked during
-     * the bulk fulfillment process. If a reference is recorded to either a request or fulfillment
-     * transfer order, the line is locked
+     * Detects if one or more lines in the record is linked to another transfer order
      * @param {*} currRec 
      */
-    function lockAllLinkedLines(currRec){
-        var foundLocks = false;
+    function foundLinkedLines(currRec){
         
-        //Iterate through the item sublist on the current record
+        //Iterate through the item sublist on the current record until at least one linked line is found
         for(var i = 0; i<currRec.getLineCount({sublistId: 'item'}); i++){
-            //If the Request TO, Fulfillment TO, or Line Unique Key fields are populated, lock the line
+            //If the Request TO, Fulfillment TO, or Line Unique Key fields are populated, consider it a linked line
             var requestTo= currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_requestto', line: i});
             var fullfillmentTo=currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_fulfillto', line: i});
             var lineUniqueKey=currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i});
             
             if(!isEmpty(requestTo) || !isEmpty(fullfillmentTo) || !isEmpty(lineUniqueKey)){
-                foundLocks = true;
-                //Loop through the fields in the line and change the display type to Disabled so that no edits can be made
-                //var ITEM_FIELD_LIST = ["amount","amounthasbeenset","backordered","billvariancestatusallbook","binitem","commitinventory","commitmentfirm","costingmethod","custcol_cen_bulkfulfill_linklinekey","custcol_cen_bulkfulfill_requestto","custcol_cen_bulkfulfill_requestto_display","custcol_oz_item_class","custcol_oz_itemtype","ddistrib","description","fulfillable","groupclosed","id","includegroupwrapper","initquantity","inventorydetailavail","isclosed","isnoninventory","isnumbered","isserial","item","item_display","itempacked","itempicked","itemtype","line","lineuniquekey","linked","linkedordbill","linkedshiprcpt","locationusesbins","noprint","oldcommitmentfirm","olditemid","onorder","printitems","quantity","quantityavailable","quantitycommitted","quantityfulfilled","quantitypacked","quantitypicked","quantityreceived","rate","sys_id","sys_parentid","unitconversionrate","units","units_display"];
-                //var ITEM_FIELD_LIST = ["item", "quantity", "initquantity"];
-                //NOTE: setting isDisabled to true on the quantity field appears to have no effect.
-                var ITEM_FIELD_LIST = ["item"];
-                console.log("Locking line fields for linked Transfer Order: Line " + i + "; Fields: " + JSON.stringify(ITEM_FIELD_LIST));
-                
-                for (var f in ITEM_FIELD_LIST) {
-                    //Access the page elements by field name and line number to avoid locking the sublist field on all lines
-                    var targetField = currRec.getSublistField({
-                        sublistId: 'item',
-                        fieldId: ITEM_FIELD_LIST[f],
-                        line: i
-                    });
-
-                    if(targetField){
-                        targetField.isDisabled = true;
-                        console.log('Field locked', ITEM_FIELD_LIST[f] + ' : ' + JSON.stringify(targetField));
-                    } else {
-                        console.log('Field not found for locking ' + ITEM_FIELD_LIST[f]);
-                    }
-                    
-                }
+                return true
             }
         }
-        return foundLocks            
+        
+        //No linked lines found
+        return false            
+    }
+
+    function populateSublistMemory(currRec, ITEM_MEMORY, QUANTITY_MEMORY){
+        //Iterate through the item sublist on the current record and document the item field selections to be preserved
+        for(var i = 0; i<currRec.getLineCount({sublistId: 'item'}); i++){
+            var linkedLineKey=currRec.getSublistValue({sublistId: 'item', fieldId: 'custcol_cen_bulkfulfill_linklinekey', line: i});
+            
+            if(!isEmpty(linkedLineKey)){
+                //For any linked lines found, record the starting item selection
+                var selectedItem = currRec.getSublistValue({sublistId: 'item', fieldId: 'item', line: i});
+                var selectedQuantity = currRec.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: i});
+                ITEM_MEMORY[linkedLineKey] = selectedItem;
+                QUANTITY_MEMORY[linkedLineKey] = selectedQuantity;
+            }
+        }
+        console.log('Item Memory: ' + JSON.stringify(ITEM_MEMORY));
+        console.log('Quantity Memory: ' + JSON.stringify(QUANTITY_MEMORY));
     }
 
     function isEmpty(stValue) {

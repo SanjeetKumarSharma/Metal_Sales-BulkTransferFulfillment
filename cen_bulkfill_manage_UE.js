@@ -47,8 +47,8 @@ define(['N/record', 'N/error'], function(record, error) {
             } else {
                 linesToReopen[requestTOid] = {};
                 //Dig into the line data to see which lines for the TO group are missing in the new record
-                for(lineNum in originalLines[requestTOid]){
-                    targetLineKey = originalLines[requestTOid][lineNum].requestLineUniqueKey;
+                for(oldLineNum in originalLines[requestTOid]){
+                    targetLineKey = originalLines[requestTOid][oldLineNum].requestLineUniqueKey;
                     //Loop through the remaining lines for this TO group until the lineuniquekey value matches the target linkedLineKey
                     var lineFound = false;
                     for(lineNum in remainingLines[requestTOid]){
@@ -60,7 +60,7 @@ define(['N/record', 'N/error'], function(record, error) {
 
                     if(!lineFound){
                         //Add it to the list of lines to reopen
-                        linesToReopen[requestTOid][lineNum] = originalLines[requestTOid][lineNum];
+                        linesToReopen[requestTOid][oldLineNum] = originalLines[requestTOid][oldLineNum];
                     }
                 }
                 //If no missing lines were found, the remove the key for this requestTOid

@@ -263,7 +263,8 @@
                 ["closed", "is", "F"], "AND",
                 ["location", "anyof", fromLoc],"AND",
                 ["transferlocation", "anyof", toLoc],"AND",                
-                ["item", "anyof", itemId]
+                ["item", "anyof", itemId], "AND", 
+                ["custcol_cen_bulkfulfill_requestto","anyof","@NONE@"]
             ],
             columns: [
                 "tranid",

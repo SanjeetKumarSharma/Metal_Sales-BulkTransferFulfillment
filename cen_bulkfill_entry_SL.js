@@ -28,22 +28,16 @@
          };
 
          if(params.from_location == NEW_ALBANY_LOC){
-            //Only send New Albany as the from location to the search
-            //But wrap the value in an array to match the expected input type
-            var fromLocList = new Array;
-            fromLocList.push(params.from_location);
-
             //For New Albany, create quantity delta lines for all differences
             params.over_fulfill_margin = 0;
             params.over_fulfill_margin = 0;
          } else {
-            //Any corporate location can be selected
-            var fromLocList = getCorporateSupplyLocations();
+            //Replace the user selection with the CORPORATE placeholder location
+            params.from_location = runtime.getCurrentScript().getParameter({name: 'custscript_corporate_location'});
 
             params.under_fulfill_margin = runtime.getCurrentScript().getParameter({name: 'custscript_underfulfillment_margin'});
             params.over_fulfill_margin = runtime.getCurrentScript().getParameter({name: 'custscript_overfulfillment_margin'});
          }
-         params.from_location = fromLocList;
          log.debug('params check', params);
  
          if (request.method === 'GET') {
@@ -85,28 +79,15 @@
              });
              item_field.defaultValue = params.item;
 
-             //If all corporate locations are shown, display that as a text message
-             //If only one location is being used, display that location name using the internal id
-             if(params.from_location.length > 1){
-                var from_loc_field = form.addField({
-                    id: 'custpage_from_location_id',
-                    label: "From Location",
-                    type: serverWidget.FieldType.TEXT,
-                    source : 'location',
-                    container: 'custpage_header_group'
-                });
-                from_loc_field.defaultValue = "All Corporate Supply Locations";
-             } else {
-                //Convert internalid to name by using a select field
-                var from_loc_field = form.addField({
-                    id: 'custpage_from_location_id',
-                    label: "From Location",
-                    type: serverWidget.FieldType.SELECT,
-                    source : 'location',
-                    container: 'custpage_header_group'
-                });
-                from_loc_field.defaultValue = params.from_location[0];
-             }
+            //Convert internalid to name by using a select field
+            var from_loc_field = form.addField({
+                id: 'custpage_from_location_id',
+                label: "From Location",
+                type: serverWidget.FieldType.SELECT,
+                source : 'location',
+                container: 'custpage_header_group'
+            });
+            from_loc_field.defaultValue = params.from_location;
              from_loc_field.updateDisplayType({
                 displayType: serverWidget.FieldDisplayType.INLINE
             });
@@ -206,11 +187,11 @@
       * override the original quantity. Quantity to Fulfill should default to the original line quantity.
       * @param {object} sublist 
       * @param {internalid} itemId 
-      * @param {internalid} fromLocList 
+      * @param {internalid} fromLoc 
       * @param {internalid} toLoc 
       * @returns modified sublist object
       */
-     function populateLineItems(sublist, itemId, fromLocList, toLoc) {
+     function populateLineItems(sublist, itemId, fromLoc, toLoc) {
         sublist.addField({
             id: 'custpage_checkbox',
             type: serverWidget.FieldType.CHECKBOX,
@@ -280,7 +261,7 @@
                 ["mainline", "is", "F"], "AND", 
                 ["transactionlinetype","anyof","ITEM"], "AND",
                 ["closed", "is", "F"], "AND",
-                ["location", "anyof", ...fromLocList],"AND",
+                ["location", "anyof", fromLoc],"AND",
                 ["transferlocation", "anyof", toLoc],"AND",                
                 ["item", "anyof", itemId]
             ],
@@ -345,26 +326,6 @@
         }
 
         return sublist
-     }
-
-     function getCorporateSupplyLocations(){
-        var locationList = [];
-
-        var locationResults = search.create({
-            type: 'location',
-            filters: [
-                ["custrecord_corp_supply","is","T"]
-            ]
-        }).run();
-
-        locationResults.each(function(result){
-            locationList.push(result.id);
-
-            //Process next result
-            return true
-        })
-
-        return locationList
      }
  
      return {

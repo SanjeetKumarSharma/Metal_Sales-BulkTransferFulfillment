@@ -35,8 +35,9 @@
             //Replace the user selection with the CORPORATE placeholder location
             params.from_location = runtime.getCurrentScript().getParameter({name: 'custscript_corporate_location'});
 
-            params.under_fulfill_margin = runtime.getCurrentScript().getParameter({name: 'custscript_underfulfillment_margin'});
-            params.over_fulfill_margin = runtime.getCurrentScript().getParameter({name: 'custscript_overfulfillment_margin'});
+            //Need to divide by 100 because otherwise, percentage field is read as a whole number
+            params.under_fulfill_margin = runtime.getCurrentScript().getParameter({name: 'custscript_underfulfillment_margin'}) / 100;
+            params.over_fulfill_margin = runtime.getCurrentScript().getParameter({name: 'custscript_overfulfillment_margin'}) / 100;
          }
          log.debug('params check', params);
  
@@ -125,7 +126,7 @@
             underfulfill_field.updateDisplayType({
                 displayType: serverWidget.FieldDisplayType.HIDDEN
             });
-            total_qty_field.defaultValue = params.under_fulfill_margin;
+            underfulfill_field.defaultValue = params.under_fulfill_margin;
 
             var overfulfill_field = form.addField({
                 id: 'custpage_over_fulfill_margin',
@@ -136,7 +137,7 @@
             overfulfill_field.updateDisplayType({
                 displayType: serverWidget.FieldDisplayType.HIDDEN
             });
-            total_qty_field.defaultValue = params.over_fulfill_margin;
+            overfulfill_field.defaultValue = params.over_fulfill_margin;
  
              form.addButton({
                  id: 'btn_cancel',

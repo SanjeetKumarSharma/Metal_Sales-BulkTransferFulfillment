@@ -115,7 +115,7 @@ function(url,dialog,currentRecord) {
         
         var bulkfill_url = url.resolveScript({
             scriptId: 'customscript_cen_blk_fulfill',
-            deploymentId: 'customdeploy1',
+            deploymentId: 'customdeploy_cen_bulkfill_suitelet',
             returnExternalUrl: false,
             params: {
                 'from_location': fromLocation,

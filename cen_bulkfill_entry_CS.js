@@ -48,8 +48,17 @@ define(['N/currentRecord', 'N/url'],
                     });
 
                     //Reload the Suitelet
-                    var serverUrl = '/app/site/hosting/scriptlet.nl?script=3071&deploy=1&from_location=' + fromLocation + '&to_location=' + toLocation + '&item=' + itemId;
-                    window.location.href = serverUrl;
+                    var bulkfill_url = url.resolveScript({
+                        scriptId: 'customscript_cen_blk_fulfill',
+                        deploymentId: 'customdeploy_cen_bulkfill_suitelet',
+                        returnExternalUrl: false,
+                        params: {
+                            'from_location': fromLocation,
+                            'to_location': toLocation,
+                            'item': itemId
+                        }
+                    });
+                    window.location.href = bulkfill_url;
                 } catch (e) {
                     log.error('ERROR', e);
                 }
